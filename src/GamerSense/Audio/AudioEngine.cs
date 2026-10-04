@@ -9,6 +9,13 @@ public sealed class AudioEngine : IDisposable
     private WasapiOut? _output;
     private BufferedWaveProvider? _buffer;
     private MMDeviceEnumerator? _enumerator;
+    private bool _outputStarted;
+
+    // Stability-first values for the prototype. Once passthrough is clean we can
+    // measure and tune these downward instead of guessing at ultra-low latency.
+    private const int OutputLatencyMs = 30;
+    private const int BufferDurationMs = 200;
+    private const int PrebufferMs = 40;
 
     public bool IsRunning { get; private set; }
     public event Action<float>? LevelChanged;
@@ -17,19 +24,15 @@ public sealed class AudioEngine : IDisposable
     public void Start(string captureDeviceId, string outputDeviceId)
     {
         Stop();
+
         _enumerator = new MMDeviceEnumerator();
         var captureEndpoint = _enumerator.GetDevice(captureDeviceId);
         var outputEndpoint = _enumerator.GetDevice(outputDeviceId);
 
         _capture = new WasapiLoopbackCapture(captureEndpoint);
-
-        // Keep this buffer deliberately short. The original 250 ms buffer could
-        // accumulate enough queued game audio to sound like an echo/delayed copy.
-        // GamerSense is latency-sensitive, so we target a small safety buffer and
-        // let WASAPI shared-mode event sync handle the pacing.
         _buffer = new BufferedWaveProvider(_capture.WaveFormat)
         {
-            BufferDuration = TimeSpan.FromMilliseconds(60),
+            BufferDuration = TimeSpan.FromMilliseconds(BufferDurationMs),
             DiscardOnBufferOverflow = true,
             ReadFully = true
         };
@@ -37,13 +40,12 @@ public sealed class AudioEngine : IDisposable
         _capture.DataAvailable += OnDataAvailable;
         _capture.RecordingStopped += OnRecordingStopped;
 
-        // Event-sync output with a smaller requested latency for gaming.
-        _output = new WasapiOut(outputEndpoint, AudioClientShareMode.Shared, true, 10);
+        // Shared-mode event sync is appropriate for the prototype and avoids
+        // forcing the physical device into a format it does not natively use.
+        _output = new WasapiOut(outputEndpoint, AudioClientShareMode.Shared, true, OutputLatencyMs);
         _output.Init(_buffer);
 
-        // Start playback first so captured samples are consumed immediately rather
-        // than building a backlog before the output client begins reading.
-        _output.Play();
+        _outputStarted = false;
         _capture.StartRecording();
         IsRunning = true;
     }
@@ -53,8 +55,24 @@ public sealed class AudioEngine : IDisposable
         if (_buffer is null || _capture is null || e.BytesRecorded <= 0)
             return;
 
-        _buffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
-        LevelChanged?.Invoke(CalculatePeak(e.Buffer, e.BytesRecorded, _capture.WaveFormat));
+        try
+        {
+            _buffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
+            LevelChanged?.Invoke(CalculatePeak(e.Buffer, e.BytesRecorded, _capture.WaveFormat));
+
+            // Give the output a small amount of real audio before it begins reading.
+            // Starting against an empty buffer was causing repeated starvation on
+            // some devices, heard as skipping/crackling.
+            if (!_outputStarted && _output is not null && _buffer.BufferedDuration.TotalMilliseconds >= PrebufferMs)
+            {
+                _output.Play();
+                _outputStarted = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Faulted?.Invoke(ex.Message);
+        }
     }
 
     private void OnRecordingStopped(object? sender, StoppedEventArgs e)
@@ -66,6 +84,7 @@ public sealed class AudioEngine : IDisposable
     public void Stop()
     {
         IsRunning = false;
+        _outputStarted = false;
 
         if (_capture is not null)
         {
