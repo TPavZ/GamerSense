@@ -5,7 +5,7 @@ namespace GamerSense.Audio;
 
 public sealed class AudioEngine : IDisposable
 {
-    private WasapiCapture? _capture;
+    private WasapiLoopbackCapture? _capture;
     private WasapiOut? _output;
     private BufferedWaveProvider? _buffer;
     private MMDeviceEnumerator? _enumerator;
@@ -21,42 +21,65 @@ public sealed class AudioEngine : IDisposable
         var captureEndpoint = _enumerator.GetDevice(captureDeviceId);
         var outputEndpoint = _enumerator.GetDevice(outputDeviceId);
 
-        // VB-CABLE exposes the application's playback endpoint as CABLE Input,
-        // while GamerSense captures from the matching CABLE Output endpoint.
-        // If the selected endpoint supports loopback, this also works as a useful
-        // development fallback for testing the routing pipeline.
         _capture = new WasapiLoopbackCapture(captureEndpoint);
+
+        // Keep this buffer deliberately short. The original 250 ms buffer could
+        // accumulate enough queued game audio to sound like an echo/delayed copy.
+        // GamerSense is latency-sensitive, so we target a small safety buffer and
+        // let WASAPI shared-mode event sync handle the pacing.
         _buffer = new BufferedWaveProvider(_capture.WaveFormat)
         {
-            BufferDuration = TimeSpan.FromMilliseconds(250),
-            DiscardOnBufferOverflow = true
+            BufferDuration = TimeSpan.FromMilliseconds(60),
+            DiscardOnBufferOverflow = true,
+            ReadFully = true
         };
 
-        _capture.DataAvailable += (_, e) =>
-        {
-            _buffer?.AddSamples(e.Buffer, 0, e.BytesRecorded);
-            LevelChanged?.Invoke(CalculatePeak(e.Buffer, e.BytesRecorded, _capture.WaveFormat));
-        };
-        _capture.RecordingStopped += (_, e) =>
-        {
-            if (e.Exception is not null) Faulted?.Invoke(e.Exception.Message);
-        };
+        _capture.DataAvailable += OnDataAvailable;
+        _capture.RecordingStopped += OnRecordingStopped;
 
-        _output = new WasapiOut(outputEndpoint, AudioClientShareMode.Shared, true, 30);
+        // Event-sync output with a smaller requested latency for gaming.
+        _output = new WasapiOut(outputEndpoint, AudioClientShareMode.Shared, true, 10);
         _output.Init(_buffer);
-        _capture.StartRecording();
+
+        // Start playback first so captured samples are consumed immediately rather
+        // than building a backlog before the output client begins reading.
         _output.Play();
+        _capture.StartRecording();
         IsRunning = true;
+    }
+
+    private void OnDataAvailable(object? sender, WaveInEventArgs e)
+    {
+        if (_buffer is null || _capture is null || e.BytesRecorded <= 0)
+            return;
+
+        _buffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
+        LevelChanged?.Invoke(CalculatePeak(e.Buffer, e.BytesRecorded, _capture.WaveFormat));
+    }
+
+    private void OnRecordingStopped(object? sender, StoppedEventArgs e)
+    {
+        if (e.Exception is not null)
+            Faulted?.Invoke(e.Exception.Message);
     }
 
     public void Stop()
     {
         IsRunning = false;
+
+        if (_capture is not null)
+        {
+            _capture.DataAvailable -= OnDataAvailable;
+            _capture.RecordingStopped -= OnRecordingStopped;
+        }
+
         try { _capture?.StopRecording(); } catch { }
         try { _output?.Stop(); } catch { }
+
         _capture?.Dispose();
         _output?.Dispose();
         _enumerator?.Dispose();
+
         _capture = null;
         _output = null;
         _buffer = null;
@@ -67,9 +90,11 @@ public sealed class AudioEngine : IDisposable
     {
         if (format.Encoding != WaveFormatEncoding.IeeeFloat || format.BitsPerSample != 32)
             return 0f;
+
         var peak = 0f;
         for (var i = 0; i + 3 < count; i += 4)
             peak = Math.Max(peak, Math.Abs(BitConverter.ToSingle(data, i)));
+
         return Math.Clamp(peak, 0f, 1f);
     }
 
