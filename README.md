@@ -351,3 +351,24 @@ retains the capture scheduling method. Requested buffer capacities remain
 No sound processing is introduced. Delay and crackling must be checked on the
 user's devices; this is not a confirmed end-to-end latency fix.
 Reference: https://learn.microsoft.com/windows/win32/coreaudio/loopback-recording
+
+## v0.4.7 — minimum-delay test and playback supply diagnostics
+
+Three playback modes are available. Existing selections migrate to the same
+Stable or Event-driven mode. Minimum delay (test) requests event-driven capture
+20 ms, shared event output 10 ms, startup prebuffer 20 ms, and capacity 80 ms.
+Actual Windows allocations can differ: Copy audio details retains them.
+The confirmed-clean Event-driven mode retains its 50/30/150/40 ms settings;
+Stable retains 100/30/200/40 ms. Device and mode selections are remembered.
+
+Playback supply diagnostics count short reads and missing audio duration before
+zero filling, with no waits or audio processing. Source pauses also count, so
+these are not a definitive audible glitch count. The former zero-fill playback
+contract is preserved and checked against BufferedWaveProvider.ReadFully=true
+for float32, PCM16, and PCM24 audio, partial and empty reads, and nonzero offsets.
+
+Minimum delay is an opt-in hardware test. It cannot promise zero latency or
+infer total audible delay from capacities. If it crackles, return to the clean
+Event-driven mode. Spectrum, matching, event review and icon are retained.
+Windows buffer sizing reference:
+https://learn.microsoft.com/windows/win32/api/audioclient/nf-audioclient-iaudioclient-initialize

@@ -147,6 +147,31 @@ using (var release = new ManualResetEventSlim())
 }
 Console.WriteLine("PASS pooled analysis queue: immutable copies, bounded backlog, nonblocking producer, stale drop, gap reset, disposal");
 
+// Compare the monitored adapter byte-for-byte to the former playback provider,
+// including reads that cross the available audio boundary and nonzero offsets.
+foreach (var format in new[] { WaveFormat.CreateIeeeFloatWaveFormat(48000, 2), new WaveFormat(48000, 16, 2), new WaveFormat(48000, 24, 2) })
+{
+    var reference = new BufferedWaveProvider(format) { ReadFully = true };
+    var monitored = new BufferedWaveProvider(format) { ReadFully = false };
+    var provider = new MeteredPlaybackProvider(monitored);
+    var originalAudio = Enumerable.Range(0, 10 * format.BlockAlign).Select(n => (byte)(n + 1)).ToArray();
+    var preserved = originalAudio.ToArray();
+    reference.AddSamples(originalAudio, 0, originalAudio.Length);
+    monitored.AddSamples(originalAudio, 0, originalAudio.Length);
+    foreach (int frames in new[] { 4, 8, 1 })
+    {
+        int count = frames * format.BlockAlign;
+        var oldBytes = Enumerable.Repeat((byte)0xCC, count + 12).ToArray();
+        var newBytes = oldBytes.ToArray();
+        if (reference.Read(oldBytes, 5, count) != provider.Read(newBytes, 5, count) || !oldBytes.SequenceEqual(newBytes))
+            throw new Exception("Playback adapter changed audio or offset guards");
+    }
+    if (!preserved.SequenceEqual(originalAudio) || provider.ReadCount != 3 || provider.ShortReadCount != 2 ||
+        Math.Abs(provider.MissingAudioMs - 1000.0 * 3 / format.SampleRate) > 1e-9)
+        throw new Exception("Playback starvation accounting incorrect");
+}
+Console.WriteLine("PASS playback supply meter: byte-identical passthrough/zero fill, offset guards, partial/empty reads, duration accounting");
+
 if (AudioTimingProfile.Stable != new AudioTimingProfile(100, 30, 200, 40)) throw new Exception("Stable settings changed");
 if (AudioTimingProfile.Responsive.PrebufferMs != AudioTimingProfile.Stable.PrebufferMs ||
     AudioTimingProfile.Responsive.OutputLatencyMs != AudioTimingProfile.Stable.OutputLatencyMs ||
@@ -160,6 +185,11 @@ using (var engine = new AudioEngine())
 }
 var legacySettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>("{\"InputDeviceId\":\"input-123\",\"OutputDeviceId\":\"output-456\"}")!;
 if (legacySettings.LowerLatency || legacySettings.InputDeviceId != "input-123" || legacySettings.OutputDeviceId != "output-456") throw new Exception("Legacy selection compatibility failed");
+var eventSettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>("{\"LowerLatency\":true}")!;
+if (!eventSettings.LowerLatency || eventSettings.FastestLatency || legacySettings.FastestLatency) throw new Exception("Legacy mode migration failed");
+var fastestSettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>(
+    System.Text.Json.JsonSerializer.Serialize(new GamerSense.Settings.AppSettings { LowerLatency = true, FastestLatency = true, InputDeviceId = "saved-input" }))!;
+if (!fastestSettings.FastestLatency || !fastestSettings.LowerLatency || fastestSettings.InputDeviceId != "saved-input") throw new Exception("Fastest mode memory failed");
 Console.WriteLine("PASS stable defaults, shorter responsive profile, diagnostic labeling, legacy device-selection compatibility");
 
 var retained = new PlaybackDiagnostics(AudioTimingProfile.Stable, "input", "output", "float48k", "float48k");

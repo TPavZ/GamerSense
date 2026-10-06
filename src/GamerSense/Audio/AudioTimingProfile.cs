@@ -9,6 +9,8 @@ public sealed record AudioTimingProfile(int CaptureBufferMs, int OutputLatencyMs
     // Shorten capture delivery without reducing the clean Stable output timing.
     // The previous 20 ms output/prebuffer test produced crackling on some devices.
     public static AudioTimingProfile Responsive { get; } = new(50, 30, 150, 40);
+    public static AudioTimingProfile Fastest { get; } = new(20, 10, 80, 20);
+    public string DisplayName => this == Stable ? "Stable" : this == Fastest ? "Minimum delay" : "Event-driven capture";
 }
 
 // NAudio's standard loopback constructor does not expose the capture-buffer size.

@@ -1,19 +1,21 @@
-GamerSense v0.4.6 — event-driven capture test
+GamerSense v0.4.7 — minimum-delay test
 
-APP TEST: Close the old app. Extract the entire app ZIP to a new folder.
-While stopped select Event-driven capture (test), then Start.
-Compare delay and quality. After 30 seconds Stop and Copy audio details.
-Capture scheduling should report Windows audio events on modern Windows.
-If audio crackles or cuts out, return to Stable playback while stopped.
-Stable is unchanged. This is a timing test, not a confirmed latency fix.
+Close the old app, extract the ENTIRE app ZIP to a new folder, open GamerSense.exe.
+Select Minimum delay (test) while stopped, then Start.
+Compare delay and quality during 2-3 minutes of continuous audio.
+Stop and Copy audio details, including WINDOWS STREAM SETTINGS and PLAYBACK SUPPLY.
+If audio crackles or drops out, return to Event-driven capture while stopped.
+That mode retains the clean v0.4.6 settings. Stable is also available.
 
-SOURCE BUILD: Use BUILD-DEBUG.bat, then launch the built GamerSense.exe.
-The app retains device selections and includes the black/teal/gold icon.
+Minimum delay requests capture 20 ms, output 10 ms, startup prebuffer 20 ms,
+capacity 80 ms. Actual Windows allocations may differ. It is not a claim of
+zero latency. Silence-fill counts include source pauses; test with continuous audio.
+Device and playback mode memory and the black/teal/gold icon are retained.
+
+SOURCE: Build using BUILD-DEBUG.bat, then launch the built GamerSense.exe.
 
 EVENT REVIEW: The latest 60 seconds are retained for reviewing spikes.
-Mark with the button or Ctrl+Alt+F8 (if available), or F8 within this app.
-Select a marker, then Load / refresh event clip. Stop before Replay range.
-Choose a label and Keep/Reduce/Unsure, then Save WAV + label.
-Save both audio and JSON files together. Sound suppression is not implemented.
-Offline demo: Event review > Open audio sample > demo-vehicles.wav.
-Select a true output on Playback first for review playback.
+Mark with the button, Ctrl+Alt+F8 if available, or F8 within this app.
+Select a marker, Load / refresh event clip, stop playback before Replay range.
+Choose a label and Keep/Reduce/Unsure, then Save WAV + label. Keep both files.
+Sound suppression is not implemented. Offline demo: Open audio sample > demo-vehicles.wav.

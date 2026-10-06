@@ -12,7 +12,7 @@ public sealed class PlaybackDiagnostics
     private double _elapsed;
     public PlaybackDiagnostics(AudioTimingProfile timing, string input, string output, string captureFormat, string outputFormat)
     {
-        _context = $"Session mode: {(timing == AudioTimingProfile.Stable ? "Stable" : "Event-driven capture")}\n" +
+        _context = $"Session mode: {timing.DisplayName}\n" +
             $"Session input: {input}\nSession output: {output}\nCapture format: {captureFormat}\nOutput mix format: {outputFormat}\n" +
             $"Requested buffers: capture {timing.CaptureBufferMs} ms, output {timing.OutputLatencyMs} ms\n" +
             $"Prebuffer: {timing.PrebufferMs} ms; playback capacity: {timing.BufferCapacityMs} ms\n";
