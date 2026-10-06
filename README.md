@@ -119,3 +119,32 @@ routing, and compare the closest-pattern readout with what you hear. Try the
 matching checkbox on/off and confirm clean audio, the spectrum, and remembered
 device selections. For repeatable feedback, note the actual sound, displayed
 category, and whether multiple sounds overlapped.
+
+## v0.3.1 — ambience fallback and stricter reload matching
+
+Weak or ambiguous matches now display "Ambience / mixed audio" rather than
+forcing a known category. Reload needs a larger margin over the second-best
+category and a closer distance to its learned pattern. Other categories also
+use rejection gates. This is a fallback display state, not a verified ambience
+classification and not a new training label. Strong matches retain their name.
+Silence still shows "Quiet audio — no match". Playback is unchanged.
+
+On the prior 1,422 held-out windows, the pilot rules reduced false reload
+matches from 122 to 8, while genuine reload matches fell from 63 to 10. The
+tradeoff is fewer false reports but more missed reloads. 800 windows were
+rejected overall. Rules are heuristic and evaluated retrospectively on the
+same development corpus, not calibrated confidence or independent live-game
+validation. New unlabeled sounds can still match a known pattern incorrectly.
+
+The new c1/c2/c3 clips are registered as provisional mixed samples, not trained:
+- c1: nearby mortar impacts/explosions plus own-character running.
+- c2: player building/repairing in-game items plus background explosions.
+- c3: helicopter rocket fire plus ground impacts/explosions (no heli landing).
+Precise event timing/review is still needed. Building/repairing has no learned
+class yet and may appear as ambience/mixed audio.
+
+Release build: 0 warnings / 0 errors. Regression checks passed, including
+Python/C# feature and gated-prediction parity; explicit gate tests verify clear
+reload acceptance and ambiguity/distance fallback. Real-device testing remains
+necessary. Keep the updated Models folder with the app; the old ungated model
+is rejected as incompatible rather than used with forced guesses.

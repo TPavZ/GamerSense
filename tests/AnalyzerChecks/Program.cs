@@ -53,8 +53,8 @@ var floatFormat = WaveFormat.CreateIeeeFloatWaveFormat(48000, 2);
 using (var live = new ExperimentalDetector(floatFormat, modelPath))
 {
     var bytes = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "g3.bin")); var original = bytes.ToArray();
-    await AwaitStatus(live, () => live.Latest.StartsWith("Closest pattern:"), bytes);
-    if (!live.Latest.StartsWith("Closest pattern:") || !bytes.SequenceEqual(original)) throw new Exception("Live tap failed");
+    await AwaitStatus(live, () => live.Latest.StartsWith("Closest pattern:") || live.Latest == "Ambience / mixed audio", bytes);
+    if ((!live.Latest.StartsWith("Closest pattern:") && live.Latest != "Ambience / mixed audio") || !bytes.SequenceEqual(original)) throw new Exception("Live tap failed");
     live.Enabled = false; await AwaitStatus(live, () => live.Latest == "Sound matching off");
     if (live.Latest != "Sound matching off") throw new Exception("Disable failed");
     live.Enabled = true; await AwaitStatus(live, () => live.Latest == "Quiet audio — no match", new byte[bytes.Length]);
@@ -86,3 +86,30 @@ static async Task AwaitStatus(ExperimentalDetector detector, Func<bool> conditio
     }
     if (!condition()) throw new Exception("Status timeout: " + detector.Latest);
 }
+
+
+var gateInput = new float[48000];
+Buffer.BlockCopy(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "g6.bin")), 0, gateInput, 0, 48000 * 4);
+var gateFeatures = WardogsModel.ExtractFeatures(gateInput);
+var gateRoot = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(modelPath))!;
+var gateMean = gateRoot["mean"]!.AsArray().Select(x => x!.GetValue<double>()).ToArray();
+var gateScale = gateRoot["scale"]!.AsArray().Select(x => x!.GetValue<double>()).ToArray();
+var normalized = gateFeatures.Select((x, i) => (x - gateMean[i]) / gateScale[i]).ToArray();
+var gatePath = Path.Combine(AppContext.BaseDirectory, "gate-check.json");
+try
+{
+    foreach (string scenario in new[] { "clear", "ambiguous", "distant" })
+    {
+        var centers = gateRoot["centers"]!.AsObject();
+        foreach (string category in centers.Select(x => x.Key).ToArray())
+        {
+            double offset = scenario == "ambiguous" ? 0 : category == "reload" ? scenario == "clear" ? 0 : 2 : 10;
+            centers[category] = System.Text.Json.JsonSerializer.SerializeToNode(normalized.Select(x => x + offset).ToArray());
+        }
+        File.WriteAllText(gatePath, gateRoot.ToJsonString());
+        string expected = scenario == "clear" ? "reload" : "ambience / mixed audio";
+        if (WardogsModel.Load(gatePath).Predict(gateInput) != expected) throw new Exception("Gate failed: " + scenario);
+    }
+}
+finally { File.Delete(gatePath); }
+Console.WriteLine("PASS clear reload accepted; ambiguous and distant matches use ambience fallback");

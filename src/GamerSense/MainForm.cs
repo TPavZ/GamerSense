@@ -23,7 +23,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.3.0 — Experimental";
+        Text = "GamerSense v0.3.1 — Experimental";
         Width = 540;
         Height = 760;
         StartPosition = FormStartPosition.CenterScreen;
@@ -58,7 +58,7 @@ public sealed class MainForm : Form
         panel.Controls.Add(_analysisText);
         panel.Controls.Add(_soundMatching);
         panel.Controls.Add(_detectionText);
-        panel.Controls.Add(new Label { Text = "Closest learned pattern; may be wrong. Audio unchanged.", AutoSize = true });
+        panel.Controls.Add(new Label { Text = "Weak matches show ambience/mixed audio. Audio unchanged.", AutoSize = true });
 
         var buttons = new FlowLayoutPanel { AutoSize = true };
         buttons.Controls.Add(_start);

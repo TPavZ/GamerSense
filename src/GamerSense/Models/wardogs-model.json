@@ -1,6 +1,6 @@
 {
   "featureVersion": "box3-spectrum-v1",
-  "version": "0.2-experimental",
+  "version": "0.3-conservative-experimental",
   "game": "WARDOGS",
   "method": "recording-balanced nearest centroid",
   "sampleRate": 48000,
@@ -501,9 +501,41 @@
   },
   "abstentionThreshold": null,
   "limitations": [
-    "Forced-choice baseline; confidence and unknown rejection are not calibrated.",
-    "Broad user-reviewed intervals are weak labels, not precise individual sound onsets.",
-    "Own and nearby movement combined; no enemy identification.",
-    "No audio filtering."
-  ]
+    "Heuristic rejection, not calibrated confidence.",
+    "Broad user-reviewed intervals are weak labels.",
+    "Own/nearby movement combined.",
+    "No audio filtering.",
+    "Normal-volume unknown or overlapping sounds may still be mislabeled."
+  ],
+  "rejectionVersion": "margin-distance-v1",
+  "rejection": {
+    "air vehicle": {
+      "minMargin": 0.25,
+      "maxDistance": 1.5
+    },
+    "ambience": {
+      "minMargin": 0.25,
+      "maxDistance": 1.5
+    },
+    "explosion": {
+      "minMargin": 0.25,
+      "maxDistance": 1.5
+    },
+    "ground vehicle": {
+      "minMargin": 0.25,
+      "maxDistance": 1.5
+    },
+    "gunfire": {
+      "minMargin": 0.25,
+      "maxDistance": 1.5
+    },
+    "movement": {
+      "minMargin": 0.25,
+      "maxDistance": 1.5
+    },
+    "reload": {
+      "minMargin": 0.6,
+      "maxDistance": 0.75
+    }
+  }
 }

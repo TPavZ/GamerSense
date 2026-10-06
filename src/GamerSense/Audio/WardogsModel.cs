@@ -8,8 +8,10 @@ public sealed class WardogsModel
 {
     private readonly double[] _mean, _scale;
     private readonly Dictionary<string, double[]> _centers;
-    private WardogsModel(double[] mean, double[] scale, Dictionary<string, double[]> centers)
-        => (_mean, _scale, _centers) = (mean, scale, centers);
+    private readonly Dictionary<string, (double MinMargin, double MaxDistance)> _rejection;
+    private WardogsModel(double[] mean, double[] scale, Dictionary<string, double[]> centers,
+        Dictionary<string, (double MinMargin, double MaxDistance)> rejection)
+        => (_mean, _scale, _centers, _rejection) = (mean, scale, centers, rejection);
 
     public static WardogsModel Load(string path)
     {
@@ -26,13 +28,27 @@ public sealed class WardogsModel
             mean.Any(x => !double.IsFinite(x)) || scale.Any(x => !double.IsFinite(x) || x <= 0) ||
             centers.Values.Any(x => x.Length != 47 || x.Any(v => !double.IsFinite(v))))
             throw new InvalidDataException("Invalid model values");
-        return new WardogsModel(mean, scale, centers);
+        if (!root.TryGetProperty("rejectionVersion", out var version) || version.GetString() != "margin-distance-v1")
+            throw new InvalidDataException("Model needs rejection rules");
+        var rejection = root.GetProperty("rejection").EnumerateObject().ToDictionary(x => x.Name,
+            x => (MinMargin: x.Value.GetProperty("minMargin").GetDouble(), MaxDistance: x.Value.GetProperty("maxDistance").GetDouble()));
+        if (centers.Count < 2 || centers.Keys.Any(c => !rejection.ContainsKey(c)) ||
+            rejection.Values.Any(v => !double.IsFinite(v.MinMargin) || v.MinMargin < 0 || v.MinMargin > 1 ||
+                !double.IsFinite(v.MaxDistance) || v.MaxDistance <= 0))
+            throw new InvalidDataException("Invalid rejection rules");
+        return new WardogsModel(mean, scale, centers, rejection);
     }
 
     public string Predict(float[] stereo)
     {
         var features = ExtractFeatures(stereo);
-        return _centers.OrderBy(pair => pair.Value.Select((v, i) => Math.Pow((features[i] - _mean[i]) / _scale[i] - v, 2)).Sum()).First().Key;
+        var ranked = _centers.Select(pair => (Category: pair.Key,
+            Distance: pair.Value.Select((v, i) => Math.Pow((features[i] - _mean[i]) / _scale[i] - v, 2)).Average()))
+            .OrderBy(x => x.Distance).ToArray();
+        var best = ranked[0];
+        double margin = (ranked[1].Distance - best.Distance) / Math.Max(ranked[1].Distance, 1e-12);
+        var gate = _rejection[best.Category];
+        return margin >= gate.MinMargin && best.Distance <= gate.MaxDistance ? best.Category : "ambience / mixed audio";
     }
 
     public static double[] ExtractFeatures(float[] stereo)

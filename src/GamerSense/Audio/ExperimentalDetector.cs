@@ -94,7 +94,8 @@ public sealed class ExperimentalDetector : IDisposable
                 for (int i = 0; i < _frame.Length; i++) _frame[i] = _ring[(_position + i) % _ring.Length];
             }
             double rms = Math.Sqrt(_frame.Select(x => (double)x * x).Average());
-            var text = rms < .001 ? "Quiet audio — no match" : "Closest pattern: " + _model!.Predict(_frame);
+            var match = rms < .001 ? null : _model!.Predict(_frame);
+            var text = match is null ? "Quiet audio — no match" : match == "ambience / mixed audio" ? "Ambience / mixed audio" : "Closest pattern: " + match;
             if (Enabled && Volatile.Read(ref _reset) == 0) Volatile.Write(ref _latest, text);
         }
         catch { Volatile.Write(ref _latest, "Sound matching unavailable; playback continues"); }
