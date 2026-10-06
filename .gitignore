@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+__pycache__/
+.github-release-checksums/

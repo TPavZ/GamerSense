@@ -1,0 +1,763 @@
+{
+  "repository": "TPavZ/GamerSense",
+  "versions": [
+    {
+      "version": "0.1.0",
+      "tag": "v0.1.0",
+      "commit": "0e6637e498ad25d48d5fbd3d960ff669cab7b216",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.1.0",
+      "assets": [
+        {
+          "name": "GamerSense-v0.1.0-source.zip",
+          "bytes": 6755,
+          "sha256": "07edcd5d936dfb1d62b329e0f27ddbb70e4ee0db1fcfe278d9f4852ec695f5d7",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.1.0/GamerSense-v0.1.0-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 96,
+          "sha256": "2306a8c3d26af1b71b89727ecac0de491bc132de641249f45daa468d15b3a40a",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.1.0/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "tag": "v0.2.0",
+      "commit": "4b4828d51cd0382105a7b1394229f08c610dbe55",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.2.0",
+      "assets": [
+        {
+          "name": "GamerSense-v0.2.0-app.zip",
+          "bytes": 333648,
+          "sha256": "019393aed19cc17d74105116937dcd30b0f69538937dcf62b28a2256673180e4",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.2.0/GamerSense-v0.2.0-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.2.0-source.zip",
+          "bytes": 12595,
+          "sha256": "3940e95435b799eeaca484af2d29bbd00d060eb4baef760ea6a3124d7e19dac6",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.2.0/GamerSense-v0.2.0-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "260f2f1220fc686f213721d798ea0fdb4a5c49c9f483fb1d5e0bd662ba6593c6",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.2.0/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "tag": "v0.3.0",
+      "commit": "f8a08b383a7cbffbd28fe61616e928f658ac22f4",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.3.0",
+      "assets": [
+        {
+          "name": "GamerSense-v0.3.0-app.zip",
+          "bytes": 354089,
+          "sha256": "442ede9af653b8139381e7797462886659b507731b95738b90d3ca685813094f",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.0/GamerSense-v0.3.0-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.3.0-source.zip",
+          "bytes": 575800,
+          "sha256": "7ab1ef50aa779671c2fc975ac555fbce2d43368ace1174078c9ba6e2d97136e1",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.0/GamerSense-v0.3.0-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "0ca1e1067e02186da0009b97d4a9757ad69257da9bab77b9cc0a792157aa1e20",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.0/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.3.1",
+      "tag": "v0.3.1",
+      "commit": "156f898d3c8fcf305dfe2ad4797958d708ff0600",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.3.1",
+      "assets": [
+        {
+          "name": "GamerSense-v0.3.1-app.zip",
+          "bytes": 355264,
+          "sha256": "73571706a3766e440f075a485cd9def5dfb97b6410910965875b4ffe89c537b0",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.1/GamerSense-v0.3.1-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.3.1-source.zip",
+          "bytes": 629614,
+          "sha256": "b5b5a9cd4eed350b0cc0d32fd1d2a7f218fef4e73b72849adf0cbd057ef3207c",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.1/GamerSense-v0.3.1-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "72d210d9118e1c908d57da04340716130d7ee70f1905be574ccfe41308f8f154",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.1/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.3.2",
+      "tag": "v0.3.2",
+      "commit": "4a4abe311eaf5c5c087beeb045392f9806e1401a",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.3.2",
+      "assets": [
+        {
+          "name": "GamerSense-v0.3.2-app.zip",
+          "bytes": 357823,
+          "sha256": "c8b89b0d7bc9891fbcbcc10cc6e6e2f56999a5e279b6e1393c846994797d2586",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.2/GamerSense-v0.3.2-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.3.2-source.zip",
+          "bytes": 632071,
+          "sha256": "058fe27bcae82542d05d6215c3f9e43bff5ed53caa2a4f3fee92c7afb14d797c",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.2/GamerSense-v0.3.2-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "c9731c1e1b2e7cfba85c80d3cc74740b1d4bd9da7ab688077e9fce8628ecf97a",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.2/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.3.3",
+      "tag": "v0.3.3",
+      "commit": "f87634eaeadb3af14ca46831e43d4384df1abff6",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.3.3",
+      "assets": [
+        {
+          "name": "GamerSense-v0.3.3-app.zip",
+          "bytes": 360709,
+          "sha256": "c676e6a1f283ef16c54d3d24832d80fafcb06ffb5ef242475de7269babfd3d47",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.3/GamerSense-v0.3.3-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.3.3-source.zip",
+          "bytes": 634523,
+          "sha256": "fe9b6af5f45ba21de6d4a18da947e1f30d2fc3965505100e0b27167b98205508",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.3/GamerSense-v0.3.3-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "4902a0b530d263db0a72b26bdea4077fae896303f2bde8fd453c819334426f68",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.3/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.3.4",
+      "tag": "v0.3.4",
+      "commit": "bd53f8b33ea22839a0b249888c7d81c322b644db",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.3.4",
+      "assets": [
+        {
+          "name": "GamerSense-v0.3.4-app.zip",
+          "bytes": 361998,
+          "sha256": "a763cf5130d8beba829ce6772f76c49845db99acb2fcce42918e28550b412f17",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.4/GamerSense-v0.3.4-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.3.4-source.zip",
+          "bytes": 636926,
+          "sha256": "a7d77ed708fc19ee9b21870604e88d175bdd84a30beb8ee4f3ece03ce8868c1f",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.4/GamerSense-v0.3.4-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "3a7a280dfae72f041353307d1a46d740ebb51620e2ab3a7ea46f91489679f7e2",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.3.4/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.0",
+      "tag": "v0.4.0",
+      "commit": "51b4f2f40bbc136ffe0dae4d223c0b7e9517ed40",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.0",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.0-app.zip",
+          "bytes": 5594212,
+          "sha256": "040553d01adb0a1d01dd774cc8a7610b68828234db68415e9f016438ee0a68c4",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.0/GamerSense-v0.4.0-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.0-source.zip",
+          "bytes": 5861879,
+          "sha256": "fa4ba16a3e20c30594dcc86fc8ecf5d1ae820ea5ec44df854ce7a5e792644250",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.0/GamerSense-v0.4.0-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "6c328ffafc26dd2cadd228ad66607feaab6b107c0a977e2ba260a8698ace8517",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.0/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.1",
+      "tag": "v0.4.1",
+      "commit": "2ba1cf0a832f89b10b44f4ee8b75200e81fec1f1",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.1",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.1-app.zip",
+          "bytes": 5909111,
+          "sha256": "882a5085ebf57517aab73e1ac00b723c33d28ff2388c9a74fbb1f1a178330234",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.1/GamerSense-v0.4.1-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.1-source.zip",
+          "bytes": 5966828,
+          "sha256": "22f9c24b1d5c816c153a6c7544bde9fd83f32a275eb972d0e803ad56220bf9a3",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.1/GamerSense-v0.4.1-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "631a70a5b13fcd21a8c83d577cbaca01484761f5cd9548c55378e5ba3ff7fe3a",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.1/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.2",
+      "tag": "v0.4.2",
+      "commit": "9aae862123289a040015b0346f382d4eb6190eb4",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.2",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.2-app.zip",
+          "bytes": 5838244,
+          "sha256": "e6dc092b1b06d02767a18f18ecb2935e2f0fa22ae93a46d42ef0b3296e5a4e50",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.2/GamerSense-v0.4.2-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.2-source.zip",
+          "bytes": 5943364,
+          "sha256": "40ebef663f73290563d343cdc54c223c3399a00ba360b0f7d98576cfde410bab",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.2/GamerSense-v0.4.2-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "12d0c446298f7f2cbe9c13df8f4d422c6cc02ef03b06b190694cdc8cac05a51e",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.2/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.3",
+      "tag": "v0.4.3",
+      "commit": "edc261afa107b4fe8b888099db5f8f929f01b5d4",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.3",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.3-app.zip",
+          "bytes": 5854705,
+          "sha256": "3c0c86bf151a1739cefbf93715e731e9fb0a74819394f202300ce3c92b2e8bb5",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.3/GamerSense-v0.4.3-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.3-source.zip",
+          "bytes": 5948974,
+          "sha256": "8ccc6eac64ba296c249cc56818670b2416ffe45bf8b2ebc3dee6de932831cb2a",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.3/GamerSense-v0.4.3-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "78739585a95c9ca96396acf012df2154c919666e39ade4c8e288ebc4cefd4d1c",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.3/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.4",
+      "tag": "v0.4.4",
+      "commit": "54bca0417095bf67a52c04f30ec8e3fb1567a61c",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.4",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.4-app.zip",
+          "bytes": 5854775,
+          "sha256": "23b53ede7ece5faf8ead29b3014dde3926568e6d6307c28021ea4de556730413",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.4/GamerSense-v0.4.4-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.4-source.zip",
+          "bytes": 5949310,
+          "sha256": "69b8651193ca1db318e3086a4673a9ed720d631ed623275b6732e4e14135e61c",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.4/GamerSense-v0.4.4-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "5c141405e98bf0594f219eeccb30b3a897570f61c5795b27ef3ac8554d184016",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.4/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.5",
+      "tag": "v0.4.5",
+      "commit": "551d85050388ebd560c17194abd51a5763819f76",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.5",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.5-app.zip",
+          "bytes": 5856565,
+          "sha256": "15313bb02ae7bab79ba8739fd289292215310529d80be766dd9e9da5d0fb7cb7",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.5/GamerSense-v0.4.5-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.5-source.zip",
+          "bytes": 5950911,
+          "sha256": "36b387349b8265964c818ef581b34490101d15d793dde2459e05d4344c1eb731",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.5/GamerSense-v0.4.5-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "feb403bcf8d20377047e584993934dd4fa7d7f61aa9e14eb9a9b30bdd5f88e7a",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.5/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.6",
+      "tag": "v0.4.6",
+      "commit": "5307fd60efcc3663414621130a04c39ede272c3a",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.6",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.6-app.zip",
+          "bytes": 5856108,
+          "sha256": "1a885d785c50d31f86600a5730dcc3d0097db00f9b3ae4c58c767d040839a5d0",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.6/GamerSense-v0.4.6-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.6-source.zip",
+          "bytes": 5951034,
+          "sha256": "85f5a3ac3c7d3e8bdf2b2bb7ea48adade586ee1d622f0ce68a7a2f5a57d490ad",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.6/GamerSense-v0.4.6-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "66715a5029dad86b7479e46a9806e31efdc68e951c883f54f6742cc892c21860",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.6/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.7",
+      "tag": "v0.4.7",
+      "commit": "4c7ed744508b9e9a558766ff651f854160f2a739",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.7",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.7-app.zip",
+          "bytes": 5857461,
+          "sha256": "c9398d581aa10b9211e0a869337a0d8afb81db49f634721fd887ebc53f02685e",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.7/GamerSense-v0.4.7-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.7-source.zip",
+          "bytes": 5953215,
+          "sha256": "6f8d787d6e2e60add0c3b61cbb3ff841d1a8f738380a15d4572d7d1e4d9fc67c",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.7/GamerSense-v0.4.7-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "110204488c7cbcb245e32cb546d835ed5a1c2dc382e5e99fc48728a954d9708b",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.7/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.8",
+      "tag": "v0.4.8",
+      "commit": "8c8ec5dedb3de46e98669059a948b183d07dbe10",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.8",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.8-app.zip",
+          "bytes": 5860474,
+          "sha256": "d095c270cb990cd29553bbd22a1f40b1d3df8aae6d8c1e470c4dd3fd7c3c15ff",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.8/GamerSense-v0.4.8-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.8-source.zip",
+          "bytes": 5956823,
+          "sha256": "5bc330bf0b9a9924553d6a951cb51c1d2d19ea9ca005d3f16d62085adbf24c5d",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.8/GamerSense-v0.4.8-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "78ff96dd3a304ee2626919c91b1ec6d09b8c89df73204f02f277421e0bdcf4f2",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.8/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.9",
+      "tag": "v0.4.9",
+      "commit": "893073349b95c4dc8331e78f2c3c38abcfb25516",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.9",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.9-app.zip",
+          "bytes": 5863585,
+          "sha256": "710195db222b9db624255bfc6613dd7eca743db7890124a2a339c49ec5c8c9bd",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.9/GamerSense-v0.4.9-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.9-source.zip",
+          "bytes": 5960905,
+          "sha256": "b065ca4c7c57f265c239f100d47d3a97e065cf36c4b307e38a476c96c7bbe852",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.9/GamerSense-v0.4.9-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 189,
+          "sha256": "93de238d35b54352ef2202ecc155420e5e7f6e69318c354d7dd01550ca6e2e0c",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.9/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.10",
+      "tag": "v0.4.10",
+      "commit": "c33d110d65960eaa9dab03e850302ca783e8dbbd",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.10",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.10-app.zip",
+          "bytes": 5863984,
+          "sha256": "e21b27112ac8928b45186fa17eb686ca98c14cfa93307cb0cac056504802d3c0",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.10/GamerSense-v0.4.10-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.10-source.zip",
+          "bytes": 5961848,
+          "sha256": "9dcc35400114896ea7325fb3dc8f3da2a25976e555974ec374485dec9353b674",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.10/GamerSense-v0.4.10-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 191,
+          "sha256": "b01992407cf488bb479d8e74d7d6bd6b888c722597db959ac555fcdebb98cce7",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.10/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.11",
+      "tag": "v0.4.11",
+      "commit": "99b3bccf4e039b0ca330b6962721b39945816e93",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.11",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.11-app.zip",
+          "bytes": 6181648,
+          "sha256": "556d88cfb9bb1bb0f4837f7dc2d8932f5819f9343f579cb30b4715f73dab80ab",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.11/GamerSense-v0.4.11-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.11-source.zip",
+          "bytes": 6233932,
+          "sha256": "bcca38ca6d83b9dc08216617f151f154e51550daae987efa7876bc03eab553ba",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.11/GamerSense-v0.4.11-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 191,
+          "sha256": "d85cff001272f25cf3ff611ca7d8b4315083fd4d5f1cdf3a2383c38f2af643b7",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.11/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.12",
+      "tag": "v0.4.12",
+      "commit": "bcfe736df078df50411983609ec07bcd129be3af",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.12",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.12-app.zip",
+          "bytes": 6193117,
+          "sha256": "7c1971be433bc6f11567e5679f6dae6d11af4bc58bda46563dea87b2dce7d1eb",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.12/GamerSense-v0.4.12-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.12-source.zip",
+          "bytes": 6243171,
+          "sha256": "f62da12bccc3e586ae79f7421e77eea6d7d4fc8844d02a5692da28955bfca153",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.12/GamerSense-v0.4.12-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 191,
+          "sha256": "a030404a0583e50f891727705e114e42565f22c9e350b42be11b1d23217ed5b5",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.12/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.13",
+      "tag": "v0.4.13",
+      "commit": "28f8adfabf55b429301779ee98aa63787acb4a77",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.13",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.13-app.zip",
+          "bytes": 6194089,
+          "sha256": "3e5218e6f716330ee8ccd14f0a17bfd60e185a0d2c7e4d0e3322407ff4c76d97",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.13/GamerSense-v0.4.13-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.13-source.zip",
+          "bytes": 6244874,
+          "sha256": "e5c1501c2434825c44d2d138e623a243ad1eb80cc544c189a713a35976311a90",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.13/GamerSense-v0.4.13-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 191,
+          "sha256": "c0ddfc9ecd6c13694af928ac229073285e892cdf1f237a3820f6f518435e9f5b",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.13/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.14",
+      "tag": "v0.4.14",
+      "commit": "4c010054bcd5c529f43115650268e2422aaeb38b",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.14",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.14-app.zip",
+          "bytes": 6194711,
+          "sha256": "9dae9347cd2cd5019bab2fe705a5c189d0edcb6b91058115a372d38d3f378e60",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.14/GamerSense-v0.4.14-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.14-source.zip",
+          "bytes": 6248487,
+          "sha256": "b1aea0f86f68f29752f71d25266a6a0e498cb9d492a354df5cbd3e10714ceb02",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.14/GamerSense-v0.4.14-source.zip"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 191,
+          "sha256": "f070b94807f6063aefbea33e90dd1d461d15c95c2752ad802886a81b41a8bf67",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.14/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.15",
+      "tag": "v0.4.15",
+      "commit": "f193ac3b996fbf4a512ba5a7d515bfce37f6229c",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.15",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.15-app.zip",
+          "bytes": 6200872,
+          "sha256": "96bedfbe2d44a14e0a78fb48ca6429db2a50b1a1d525841dadc320e4ed575a9d",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.15/GamerSense-v0.4.15-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.15-source.zip",
+          "bytes": 6257099,
+          "sha256": "8825e25a931a6403a5f8486d3171d819e8caa25c1fb7cd44a7412903d8e24203",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.15/GamerSense-v0.4.15-source.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.15-guide.txt",
+          "bytes": 3892,
+          "sha256": "4e5f6ab2e1ec815012b4e82f6c69157cfaefc3e8b6f56c1b393187af1d9e23aa",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.15/GamerSense-v0.4.15-guide.txt"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 287,
+          "sha256": "61b67cfbb056d0db5249abe536f901d7cab7ea32819c410ad807b30cc247235a",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.15/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.16",
+      "tag": "v0.4.16",
+      "commit": "5f7b46fa6c31a9f025265068030930189f5e982e",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.16",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.16-app.zip",
+          "bytes": 6466541,
+          "sha256": "07d531ef1d574895f26794e61e5ac5870993fac09371b7984852678a0b80de62",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.16/GamerSense-v0.4.16-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.16-source.zip",
+          "bytes": 6521602,
+          "sha256": "b5155697329742540ea8998071fba90895c9b4902e20a0001d59a26d18716022",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.16/GamerSense-v0.4.16-source.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.16-guide.txt",
+          "bytes": 4148,
+          "sha256": "058037891a7dcba8f22abf4e4fd0b40a1c96dfdfc5d1f180bfe4f99b20b5c82a",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.16/GamerSense-v0.4.16-guide.txt"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 287,
+          "sha256": "7c872768fa19eb74d148d388abc35522239967a83515edf469d755cd2a86a1d1",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.16/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.17",
+      "tag": "v0.4.17",
+      "commit": "9f582e6b5416550316dc863456965a7ad8112ecd",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.17",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.17-app.zip",
+          "bytes": 6467549,
+          "sha256": "fd40da6c01e9d73e52cf8a662768bf3215776aeb47d63a6a6d8a87f3c84674ce",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.17/GamerSense-v0.4.17-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.17-source.zip",
+          "bytes": 6523129,
+          "sha256": "56b9d361a9e302a43a9fa09f273e734bb1a9a54e9f4b4aa563c043e3ef74e66f",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.17/GamerSense-v0.4.17-source.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.17-guide.txt",
+          "bytes": 4371,
+          "sha256": "fb1557ce44a0caa84a999057b7d5ee42208179159db22aa827faaa0eeaa0891c",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.17/GamerSense-v0.4.17-guide.txt"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 287,
+          "sha256": "ca6bc16151d9f1fc0634ec1476f9527171653ebd296922f76e14295f11760544",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.17/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.18",
+      "tag": "v0.4.18",
+      "commit": "9a0142ed20537419b9bfa209c95ab2dc6dfadb5e",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.18",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.18-app.zip",
+          "bytes": 6613312,
+          "sha256": "0050b404b61f0fcdffff2eee4a22fbb926a7c5bc8a940207abcbb25974aca08b",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.18/GamerSense-v0.4.18-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.18-source.zip",
+          "bytes": 6668889,
+          "sha256": "58864c8c7533adec376eb7e4d294b74aabe356351e14736bd6472b107b808742",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.18/GamerSense-v0.4.18-source.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.18-guide.txt",
+          "bytes": 4436,
+          "sha256": "c24f2b1337cf36fef75ba2babeac5454496ac08b9c755fd94fac6a0e1a15d340",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.18/GamerSense-v0.4.18-guide.txt"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 287,
+          "sha256": "9182f3b2bc6354bce601e96236d4575b1ffcf465233c5826042a2ba9e4aa4a5f",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.18/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.19",
+      "tag": "v0.4.19",
+      "commit": "d6d4bae1bbbea4914548641da6996d601747296b",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.19",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.19-app.zip",
+          "bytes": 6620850,
+          "sha256": "44117f37e8d3adfe9bcf43bea9d4c939169b79139fec0ed89a32dd59ba059708",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.19/GamerSense-v0.4.19-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.19-source.zip",
+          "bytes": 6677074,
+          "sha256": "68c8c6e1c6399ae27d698e930b322e0c971ebf00ac0d3083503161513f466788",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.19/GamerSense-v0.4.19-source.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.19-guide.txt",
+          "bytes": 4013,
+          "sha256": "cad4277c0fe4ea6626f2314414f454a4056154ec66b3eaef8090f514492d9848",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.19/GamerSense-v0.4.19-guide.txt"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 287,
+          "sha256": "c7bd4f5965cef286ef33e0786010570a0e030eb4395e84dab8d0f5717e3171ef",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.19/SHA256SUMS.txt"
+        }
+      ]
+    },
+    {
+      "version": "0.4.20",
+      "tag": "v0.4.20",
+      "commit": "78980ffb5ba9b5ee22d72ea4dc77a1226bb2c8bd",
+      "releaseUrl": "https://github.com/TPavZ/GamerSense/releases/tag/v0.4.20",
+      "assets": [
+        {
+          "name": "GamerSense-v0.4.20-app.zip",
+          "bytes": 6622512,
+          "sha256": "7a1b2754f940412779003954de9237fba89266a1e4a149761c37b1c63bc8ce7a",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.20/GamerSense-v0.4.20-app.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.20-source.zip",
+          "bytes": 6679075,
+          "sha256": "51829ed688c542f9335af631e661ef7c4eb95a6d1b5a2ce0c1f1796b8d219120",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.20/GamerSense-v0.4.20-source.zip"
+        },
+        {
+          "name": "GamerSense-v0.4.20-guide.txt",
+          "bytes": 5047,
+          "sha256": "d96830f88f0daf481656c484cccf233ffc47a4f49eba532f5f609bfa594f8bec",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.20/GamerSense-v0.4.20-guide.txt"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 287,
+          "sha256": "a134da7a6c41cdccbf0948030c5f996cc545e8f11fefe6e8ecdec6394cd52f1d",
+          "url": "https://github.com/TPavZ/GamerSense/releases/download/v0.4.20/SHA256SUMS.txt"
+        }
+      ]
+    }
+  ]
+}
