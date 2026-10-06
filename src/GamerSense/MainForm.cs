@@ -21,12 +21,15 @@ public sealed class MainForm : Form
     private readonly CheckBox _soundMatching = new() { Text = "Experimental Wardogs sound matching", Checked = true, AutoSize = true };
     private readonly Label _detectionText = new() { AutoSize = true, Text = "Sound matching idle" };
     private readonly Label _queueText = new() { AutoSize = true, Text = "Queued audio: 0 ms" };
+    private readonly ComboBox _playbackMode = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 430 };
+    private readonly Label _captureText = new() { AutoSize = true, Text = "Capture batch: 0 ms" };
+    private readonly Button _copyAudioDetails = new() { Text = "Copy audio details", Width = 170 };
 
     public MainForm()
     {
-        Text = "GamerSense v0.3.2 — Experimental";
+        Text = "GamerSense v0.3.3 — Experimental";
         Width = 540;
-        Height = 760;
+        Height = 860;
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(18, 18, 22);
         ForeColor = Color.White;
@@ -52,12 +55,18 @@ public sealed class MainForm : Form
         panel.Controls.Add(_input);
         panel.Controls.Add(outputLabel);
         panel.Controls.Add(_output);
+        panel.Controls.Add(new Label { Text = "PLAYBACK MODE — change while stopped", AutoSize = true });
+        _playbackMode.Items.AddRange(new object[] { "Stable playback", "Lower latency (test)" });
+        _playbackMode.SelectedIndex = _settings.LowerLatency ? 1 : 0;
+        _engine.LowerLatency = _settings.LowerLatency;
+        panel.Controls.Add(_playbackMode);
         panel.Controls.Add(new Label { Text = "LIVE AUDIO", AutoSize = true });
         panel.Controls.Add(_meter);
         panel.Controls.Add(new Label { Text = "LIVE SPECTRUM • Hz / dBFS", AutoSize = true });
         panel.Controls.Add(_spectrum);
         panel.Controls.Add(_analysisText);
         panel.Controls.Add(_queueText);
+        panel.Controls.Add(_captureText);
         panel.Controls.Add(_soundMatching);
         panel.Controls.Add(_detectionText);
         panel.Controls.Add(new Label { Text = "Weak matches show ambience/mixed audio. Audio unchanged.", AutoSize = true });
@@ -67,13 +76,29 @@ public sealed class MainForm : Form
         buttons.Controls.Add(_refresh);
         panel.Controls.Add(buttons);
         panel.Controls.Add(_status);
+        panel.Controls.Add(_copyAudioDetails);
         Controls.Add(panel);
 
         _refresh.Click += (_, _) => LoadDevices();
+        _copyAudioDetails.Click += (_, _) =>
+        {
+            try
+            {
+                Clipboard.SetText(_engine.AudioDetails + $"\nInput: {_input.Text}\nOutput: {_output.Text}");
+                SetStatus("Audio details copied — paste them into the chat.");
+            }
+            catch (System.Runtime.InteropServices.ExternalException) { SetStatus("Clipboard busy; try again."); }
+        };
         _start.Click += (_, _) => ToggleEngine();
         _input.SelectedIndexChanged += (_, _) => SaveDeviceSelections();
         _output.SelectedIndexChanged += (_, _) => SaveDeviceSelections();
         _soundMatching.CheckedChanged += (_, _) => _engine.DetectionEnabled = _soundMatching.Checked;
+        _playbackMode.SelectedIndexChanged += (_, _) =>
+        {
+            _settings.LowerLatency = _playbackMode.SelectedIndex == 1;
+            _engine.LowerLatency = _settings.LowerLatency;
+            _settings.Save();
+        };
         _analysisTimer.Tick += (_, _) =>
         {
             var frame = _engine.Analysis;
@@ -81,6 +106,7 @@ public sealed class MainForm : Form
             _spectrum.Invalidate();
             _detectionText.Text = _engine.Detection;
             _queueText.Text = $"Queued audio: {_engine.QueuedAudioMs:F0} ms";
+            _captureText.Text = $"Capture batch: {_engine.CaptureBatchMs:F0} ms";
             _meter.Value = frame is null ? 0 : Math.Clamp((int)(Math.Pow(10, frame.PeakDb / 20) * 1000), 0, 1000);
             _analysisText.Text = frame is null ? "Analyzer idle — playback unchanged" : !frame.Supported ? "Analysis unavailable for this format; playback continues" : $"Peak {frame.PeakDb:F1} | RMS {frame.RmsDb:F1} dBFS | Dominant {frame.DominantHz:F0} Hz";
         };
@@ -157,6 +183,7 @@ public sealed class MainForm : Form
         {
             _engine.Stop();
             _start.Text = "START GAMERSENSE";
+            _playbackMode.Enabled = true;
             SetStatus("Stopped");
             return;
         }
@@ -175,6 +202,7 @@ public sealed class MainForm : Form
         {
             _engine.Start(input.Id, output.Id);
             _start.Text = "STOP GAMERSENSE";
+            _playbackMode.Enabled = false;
             SetStatus("Processing audio → " + output.Name);
         }
         catch (Exception ex)

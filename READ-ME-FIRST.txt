@@ -1,16 +1,10 @@
-GamerSense v0.3.2
-Build with BUILD-DEBUG.bat, then launch the built GamerSense.exe.
+GamerSense v0.3.3
+Build with BUILD-DEBUG.bat and launch the built GamerSense.exe.
+Stop playback, select Lower latency (test), then Start to test shorter buffers.
+If audio crackles, Stop, select Stable playback, and Start again.
+Click Copy audio details while playing and paste the text into the chat to
+help diagnose delay. Requested and measured queue/batch values do not equal
+full end-to-end latency. See README.md for validation and timing details.
 
-Includes stricter reload rules, ambience/mixed fallback, and background sample
-decoding. The original playback buffer values remain. This is not a measured
-latency fix: use the Queued audio readout to help check for increasing backlog.
-That readout excludes device/output latency. See README.md for testing details.
-
-Developer checks: dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj
-
-Retraining with Python and NumPy:
-1. Put validation/reviewed-labels.json into the extracted Wardogs-samples folder.
-2. python validation/train_live_model.py Wardogs-samples Wardogs-model-results
-3. python validation/apply_rejection.py Wardogs-model-results
-4. The gated model is Wardogs-model-results/prototype-model.json.
-No source audio is changed. New c1/c2/c3 clips remain unverified/untrained.
+All v0.3.2 matching and observer fixes are included. Remembered device IDs are
+preserved. Developer checks: dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj

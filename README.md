@@ -174,3 +174,39 @@ New queue tests verify immutable copies, bounded backlog, no waiting on a busy
 observer, stale-packet discard, discontinuity reset, and disposal. Original
 format, feature-parity, matching and rejection checks also passed. Debug and
 Release compilation passed with no warnings/errors.
+
+## v0.3.3 — selectable playback timing and route diagnostics
+
+Stable playback remains the default and retains the original capture constructor
+and buffer settings. Lower latency (test), selectable only while stopped,
+requests a 20 ms polling capture buffer, 20 ms output buffer, 20 ms prebuffer,
+and 80 ms playback buffer capacity. Stable uses the original 100 ms capture
+request, 30 ms output request, 40 ms prebuffer, and 200 ms capacity. Requests
+are not guarantees of hardware or end-to-end latency. Mode selection is saved
+alongside device IDs; existing settings migrate with Stable as the default.
+
+The lower-latency capture subclass uses the same shared-mode loopback and
+conversion flags with a shorter requested buffer. No EQ/filtering is applied.
+If this mode crackles, Stop and choose Stable playback before restarting.
+
+Capture batch shows the duration of the latest delivered packet, not its age.
+Queued audio shows only the playback-provider backlog. Copy audio details
+copies requested timings, observed queue/batch values, device names/formats,
+and matcher state to the clipboard for troubleshooting. It is only copied
+when you press the button, with no automatic upload.
+
+A reported 40–70 ms provider queue cannot alone explain 500–600 ms of perceived
+delay. The virtual-device route, output-device buffering, sample-rate conversion,
+or a different latency measurement may also contribute. None is yet verified.
+Compare audible gunfire with the game action; the pattern readout itself uses
+a half-second analysis window and is intentionally later than immediate audio.
+
+Capture default behavior was checked against the pinned NAudio 2.2.1 source:
+https://raw.githubusercontent.com/naudio/NAudio/v2.2.1/NAudio.Wasapi/WasapiCapture.cs
+https://raw.githubusercontent.com/naudio/NAudio/v2.2.1/NAudio.Wasapi/WasapiLoopbackCapture.cs
+
+Validation: stable timing preservation, shorter responsive timing, compatible
+legacy saved device IDs, accurately labeled timing report, and all observer,
+feature parity, classifier fallback, format and disposal regressions passed.
+Debug/Release compilation passed with 0 warnings/errors. Actual WASAPI hardware
+startup/latency and listening quality have not been tested in this workspace.

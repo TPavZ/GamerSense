@@ -146,3 +146,18 @@ using (var release = new ManualResetEventSlim())
     tap.Dispose(); tap.Enqueue(new byte[] { 5 }, 1);
 }
 Console.WriteLine("PASS pooled analysis queue: immutable copies, bounded backlog, nonblocking producer, stale drop, gap reset, disposal");
+
+if (AudioTimingProfile.Stable != new AudioTimingProfile(100, 30, 200, 40)) throw new Exception("Stable settings changed");
+if (AudioTimingProfile.Responsive.PrebufferMs >= AudioTimingProfile.Stable.PrebufferMs ||
+    AudioTimingProfile.Responsive.OutputLatencyMs >= AudioTimingProfile.Stable.OutputLatencyMs ||
+    AudioTimingProfile.Responsive.CaptureBufferMs >= AudioTimingProfile.Stable.CaptureBufferMs ||
+    AudioTimingProfile.Responsive.BufferCapacityMs <= AudioTimingProfile.Responsive.PrebufferMs)
+    throw new Exception("Invalid responsive profile");
+using (var engine = new AudioEngine())
+{
+    if (engine.LowerLatency || engine.ActiveTiming != AudioTimingProfile.Stable) throw new Exception("Stable default changed");
+    if (!engine.AudioDetails.Contains("not total end-to-end latency")) throw new Exception("Misleading timing report");
+}
+var legacySettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>("{\"InputDeviceId\":\"input-123\",\"OutputDeviceId\":\"output-456\"}")!;
+if (legacySettings.LowerLatency || legacySettings.InputDeviceId != "input-123" || legacySettings.OutputDeviceId != "output-456") throw new Exception("Legacy selection compatibility failed");
+Console.WriteLine("PASS stable defaults, shorter responsive profile, diagnostic labeling, legacy device-selection compatibility");

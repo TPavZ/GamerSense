@@ -5,7 +5,7 @@ namespace GamerSense.Audio;
 
 public sealed class AudioEngine : IDisposable
 {
-    private WasapiLoopbackCapture? _capture;
+    private WasapiCapture? _capture;
     private WasapiOut? _output;
     private BufferedWaveProvider? _buffer;
     private MMDeviceEnumerator? _enumerator;
@@ -13,6 +13,17 @@ public sealed class AudioEngine : IDisposable
     private LiveAnalyzer? _analyzer;
     private AnalysisTap? _tap;
     public double QueuedAudioMs => _buffer?.BufferedDuration.TotalMilliseconds ?? 0;
+    private double _captureBatchMs;
+    public double CaptureBatchMs => Volatile.Read(ref _captureBatchMs);
+    public bool LowerLatency { get; set; }
+    public AudioTimingProfile ActiveTiming { get; private set; } = AudioTimingProfile.Stable;
+    private string _captureFormat = "Not started", _outputMixFormat = "Not started";
+    public string AudioDetails => $"GamerSense v0.3.3\nRunning: {IsRunning}\nMode: {(ActiveTiming == AudioTimingProfile.Responsive ? "Lower latency" : "Stable")}\n" +
+        $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
+        $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
+        $"Queued audio now: {QueuedAudioMs:F1} ms\nLast capture batch: {CaptureBatchMs:F1} ms\n" +
+        $"Capture format: {_captureFormat}\nOutput device mix format: {_outputMixFormat}\nMatching enabled: {DetectionEnabled}\n" +
+        "Queue/batch values are partial diagnostics, not total end-to-end latency.";
     public AnalysisFrame? Analysis => _analyzer?.Latest;
     private ExperimentalDetector? _detector;
     private bool _detectionEnabled = true;
@@ -23,27 +34,25 @@ public sealed class AudioEngine : IDisposable
         set { _detectionEnabled = value; if (_detector is not null) _detector.Enabled = value; }
     }
 
-    // Stability-first values for the prototype. Once passthrough is clean we can
-    // measure and tune these downward instead of guessing at ultra-low latency.
-    private const int OutputLatencyMs = 30;
-    private const int BufferDurationMs = 200;
-    private const int PrebufferMs = 40;
-
     public bool IsRunning { get; private set; }
     public event Action<string>? Faulted;
 
     public void Start(string captureDeviceId, string outputDeviceId)
     {
         Stop();
+        ActiveTiming = LowerLatency ? AudioTimingProfile.Responsive : AudioTimingProfile.Stable;
 
         _enumerator = new MMDeviceEnumerator();
         var captureEndpoint = _enumerator.GetDevice(captureDeviceId);
         var outputEndpoint = _enumerator.GetDevice(outputDeviceId);
+        _outputMixFormat = outputEndpoint.AudioClient.MixFormat.ToString();
 
-        _capture = new WasapiLoopbackCapture(captureEndpoint);
+        _capture = LowerLatency ? new ResponsiveLoopbackCapture(captureEndpoint, ActiveTiming.CaptureBufferMs)
+            : new WasapiLoopbackCapture(captureEndpoint);
+        _captureFormat = _capture.WaveFormat.ToString();
         _buffer = new BufferedWaveProvider(_capture.WaveFormat)
         {
-            BufferDuration = TimeSpan.FromMilliseconds(BufferDurationMs),
+            BufferDuration = TimeSpan.FromMilliseconds(ActiveTiming.BufferCapacityMs),
             DiscardOnBufferOverflow = true,
             ReadFully = true
         };
@@ -53,7 +62,7 @@ public sealed class AudioEngine : IDisposable
 
         // Shared-mode event sync is appropriate for the prototype and avoids
         // forcing the physical device into a format it does not natively use.
-        _output = new WasapiOut(outputEndpoint, AudioClientShareMode.Shared, true, OutputLatencyMs);
+        _output = new WasapiOut(outputEndpoint, AudioClientShareMode.Shared, true, ActiveTiming.OutputLatencyMs);
         _output.Init(_buffer);
 
         _outputStarted = false;
@@ -76,11 +85,12 @@ public sealed class AudioEngine : IDisposable
         try
         {
             _buffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
+            Volatile.Write(ref _captureBatchMs, 1000.0 * e.BytesRecorded / _capture.WaveFormat.AverageBytesPerSecond);
 
             // Give the output a small amount of real audio before it begins reading.
             // Starting against an empty buffer was causing repeated starvation on
             // some devices, heard as skipping/crackling.
-            if (!_outputStarted && _output is not null && _buffer.BufferedDuration.TotalMilliseconds >= PrebufferMs)
+            if (!_outputStarted && _output is not null && _buffer.BufferedDuration.TotalMilliseconds >= ActiveTiming.PrebufferMs)
             {
                 _output.Play();
                 _outputStarted = true;
@@ -102,6 +112,7 @@ public sealed class AudioEngine : IDisposable
     public void Stop()
     {
         IsRunning = false;
+        Volatile.Write(ref _captureBatchMs, 0);
         Interlocked.Exchange(ref _tap, null)?.Dispose();
         _detector?.Dispose();
         _detector = null;

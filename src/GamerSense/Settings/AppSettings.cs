@@ -6,6 +6,7 @@ public sealed class AppSettings
 {
     public string? InputDeviceId { get; set; }
     public string? OutputDeviceId { get; set; }
+    public bool LowerLatency { get; set; }
 
     private static string SettingsDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
