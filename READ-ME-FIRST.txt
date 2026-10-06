@@ -1,19 +1,22 @@
-GamerSense v0.4.8 — lean shared output test
+GamerSense v0.4.9 — low-period shared output test
 
 Close the old app, extract the ENTIRE app ZIP to a new folder, open GamerSense.exe.
-Select Lean output (test) while stopped, then Start.
+Select Low-period output (test) while stopped, then Start.
 Compare delay and quality during 2-3 minutes of continuous audio.
 Stop and Copy audio details, including LEAN OUTPUT and PLAYBACK SUPPLY.
-If audio crackles, drops out, or fails to start, return to Event-driven capture
-while stopped. Previous Event-driven, Minimum delay, and Stable modes remain.
+The report shows supported/selected shared engine periods, or a fallback reason.
+If it crackles or drops out, return to Lean output (test) while stopped.
+All existing modes, device/mode memory and the black/teal/gold icon are retained.
 
-Lean output targets one Windows device period (about 10 ms on C6), instead of
-filling the allocated output capacity. It starts after 10 ms of captured audio.
-Its requested 30 ms allocation is capacity/headroom, not queued-audio target.
-Capture uses the clean 50 ms event-driven allocation; events deliver audio promptly.
-Actual target, allocated capacity, padding, and silence fill are reported.
-No claim of zero or measured end-to-end latency. Hardware audition is required.
-Existing saved device and playback-mode choices are retained.
+This mode queries IAudioClient3 for supported shared engine periods and requests
+the shortest one below the default, using matching native float32 mono/stereo.
+On unsupported drivers/formats/initialization it uses Lean rendering and reports
+that fallback. Startup reserve remains 10 ms. Output capacity follows the
+selected period; the 30 ms allocation request applies only to fallback.
+Only available captured samples are queued in low-period rendering; waits for
+source are counted separately from silence fill. Neither is a definitive glitch
+count. No claim of zero or measured end-to-end latency is made.
+C6 driver support, audible latency and sound quality require the user's test.
 
 SOURCE: Build using BUILD-DEBUG.bat, then launch the built GamerSense.exe.
 
@@ -22,4 +25,3 @@ Mark with the button, Ctrl+Alt+F8 if available, or F8 within this app.
 Select a marker, Load / refresh event clip, stop playback before Replay range.
 Choose a label and Keep/Reduce/Unsure, then Save WAV + label. Keep both files.
 Sound suppression is not implemented. Offline demo: Open audio sample > demo-vehicles.wav.
-The black/teal/gold icon, spectrum and matching are retained.

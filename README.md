@@ -398,3 +398,39 @@ checks. Windows render-device behavior still requires the user's listening test.
 References:
 https://learn.microsoft.com/windows/win32/api/audioclient/nf-audioclient-iaudioclient-getcurrentpadding
 https://learn.microsoft.com/windows/win32/api/avrt/nf-avrt-avsetmmthreadcharacteristicsw
+
+## v0.4.9 — low-period shared output test
+
+Low-period output (test) asks IAudioClient3 for its supported shared engine
+period range and initializes at the shortest aligned period below the default.
+This uses the native matching float32 mono/stereo output mix format: no sample
+conversion or processing. Driver support is queried; the older 3 ms device
+minimum is not treated as proof of low-period shared support.
+
+If the interface, format, period, or initialization is unsupported, the app
+reports that and uses the Lean renderer on a fresh client. It keeps a 10 ms
+startup reserve, including fallback. Existing
+Lean output retains its 10 ms reserve; every previous mode is unchanged.
+
+The report includes the driver-supported shared period range, selected/current
+period when available, actual endpoint capacity, target queue, and silence fill.
+The generic 30 ms output request is for fallback allocation only in this mode;
+IAudioClient3 chooses capacity from the period. It is not a total latency reading.
+COM interop keeps all base slots in native order. Unsupported settings never
+reinitialize an already initialized client. Native format buffers are freed.
+
+Validation: period alignment/bounds, mismatched-format rejection, COM declaration
+order, saved-mode migration, render scheduling, byte-preserving zero fill,
+analysis and event-review checks. Actual C6 driver behavior needs a user test.
+No claim of zero latency or clean low-period playback is made before that test.
+Reference:
+https://learn.microsoft.com/windows/win32/api/audioclient/nf-audioclient-iaudioclient3-initializesharedaudiostream
+
+
+When low-period initialization is active, the renderer queues available captured
+frames only. A partial source batch is submitted as a partial render packet;
+source arrivals wake the renderer to refill before the next device event when
+possible. Refill attempts waiting for capture are reported separately; ordinary
+silence-fill counters do not cover those waits. Source pauses also cause waits.
+This avoids committing premature silence between differently sized capture and
+render batches. The original Lean mode and fallback retain their former behavior.

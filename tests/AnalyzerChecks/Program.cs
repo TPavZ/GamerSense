@@ -185,9 +185,33 @@ for (int padding = 0; padding <= capacity; padding++)
 }
 if (LeanSharedOutput.FramesToWrite(1056, 480, 0) != 480 || LeanSharedOutput.FramesToWrite(1056, 480, 240) != 240)
     throw new Exception("Lean renderer filled allocated capacity instead of target");
+if (LeanSharedOutput.FramesToWrite(288, 144, 0, 48) != 48 || LeanSharedOutput.FramesToWrite(288, 144, 48, 0) != 0 ||
+    LeanSharedOutput.FramesToWrite(288, 144, 48, 1000) != 96)
+    throw new Exception("Short-period renderer precommitted unavailable samples");
 try { LeanSharedOutput.FramesToWrite(480, 480, 481); throw new Exception("Invalid padding accepted"); }
 catch (ArgumentOutOfRangeException) { }
 Console.WriteLine("PASS lean render scheduling: capacity/target/padding sweep, no overwrite, idempotent refill, invalid padding rejected");
+
+if (LowPeriodSupport.SelectMinimum(4, 48, 448) != 48 || LowPeriodSupport.SelectMinimum(4, 49, 448) != 52)
+    throw new Exception("Shared engine period alignment failed");
+foreach (var range in new[] { (0u, 48u, 448u), (4u, 49u, 50u), (4u, 0u, 100u), (4u, 100u, 48u) })
+{
+    try { LowPeriodSupport.SelectMinimum(range.Item1, range.Item2, range.Item3); throw new Exception("Invalid engine range accepted"); }
+    catch (ArgumentException) { }
+}
+var nativeFloatMix = new WaveFormatExtensible(48000, 32, 2);
+if (!LowPeriodSupport.CanPassFloatThrough(WaveFormat.CreateIeeeFloatWaveFormat(48000, 2), nativeFloatMix) ||
+    LowPeriodSupport.CanPassFloatThrough(WaveFormat.CreateIeeeFloatWaveFormat(44100, 2), nativeFloatMix) ||
+    LowPeriodSupport.CanPassFloatThrough(new WaveFormat(48000, 32, 2), nativeFloatMix) ||
+    LowPeriodSupport.CanPassFloatThrough(WaveFormat.CreateIeeeFloatWaveFormat(48000, 1), nativeFloatMix))
+    throw new Exception("Low-period format guard failed");
+var interop = typeof(LowPeriodSupport).Assembly.GetType("GamerSense.Audio.ISharedPeriodClient")!;
+var nativeMethods = interop.GetMethods().OrderBy(method => method.MetadataToken).ToArray();
+if (!interop.IsImport || nativeMethods.Length != 18 ||
+    nativeMethods[15].Name != "GetSharedModeEnginePeriod" || nativeMethods[16].Name != "GetCurrentSharedModeEnginePeriod" ||
+    nativeMethods[17].Name != "InitializeSharedAudioStream" || nativeMethods.Any(method => method.ReturnType != typeof(int)))
+    throw new Exception("IAudioClient3 vtable ordering incorrect");
+Console.WriteLine("PASS low-period support: aligned supported ranges, format guards, native COM method slots");
 
 if (AudioTimingProfile.Stable != new AudioTimingProfile(100, 30, 200, 40)) throw new Exception("Stable settings changed");
 if (AudioTimingProfile.Responsive.PrebufferMs != AudioTimingProfile.Stable.PrebufferMs ||
@@ -211,6 +235,10 @@ if (fastestSettings.LeanOutput || eventSettings.LeanOutput || legacySettings.Lea
 var leanSettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>(
     System.Text.Json.JsonSerializer.Serialize(new GamerSense.Settings.AppSettings { LeanOutput = true, InputDeviceId = "saved-input" }))!;
 if (!leanSettings.LeanOutput || leanSettings.InputDeviceId != "saved-input") throw new Exception("Lean mode memory failed");
+if (leanSettings.LowEnginePeriod || fastestSettings.LowEnginePeriod || eventSettings.LowEnginePeriod) throw new Exception("Existing modes changed to low-period mode");
+var periodSettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>(
+    System.Text.Json.JsonSerializer.Serialize(new GamerSense.Settings.AppSettings { LowEnginePeriod = true, OutputDeviceId = "saved-output" }))!;
+if (!periodSettings.LowEnginePeriod || periodSettings.OutputDeviceId != "saved-output") throw new Exception("Low-period mode memory failed");
 Console.WriteLine("PASS stable defaults, shorter responsive profile, diagnostic labeling, legacy device-selection compatibility");
 
 var retained = new PlaybackDiagnostics(AudioTimingProfile.Stable, "input", "output", "float48k", "float48k");

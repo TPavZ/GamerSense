@@ -14,6 +14,7 @@ public sealed class MeteredPlaybackProvider : IWaveProvider
         _source = source;
     }
     public WaveFormat WaveFormat => _source.WaveFormat;
+    public int AvailableFrames => _source.BufferedBytes / WaveFormat.BlockAlign;
     public long ReadCount => Interlocked.Read(ref _reads);
     public long ShortReadCount => Interlocked.Read(ref _shortReads);
     public double MissingAudioMs => 1000.0 * Interlocked.Read(ref _missingBytes) / WaveFormat.AverageBytesPerSecond;
