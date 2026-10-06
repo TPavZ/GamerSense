@@ -372,3 +372,29 @@ infer total audible delay from capacities. If it crackles, return to the clean
 Event-driven mode. Spectrum, matching, event review and icon are retained.
 Windows buffer sizing reference:
 https://learn.microsoft.com/windows/win32/api/audioclient/nf-audioclient-iaudioclient-initialize
+
+## v0.4.8 — lean shared output test
+
+Lean output (test) adds a custom shared-mode event renderer that queues one
+10 ms/default device period instead of filling the allocated endpoint capacity.
+It requests 30 ms output capacity as headroom, but uses CurrentPadding to refill
+only to the target. Capacity and occupied queue depth are separate quantities.
+Capture retains the clean event-driven 50 ms allocation and starts playback
+after 10 ms of captured audio. Source arrivals also wake the render thread.
+The renderer uses above-normal thread priority and attempts Pro Audio MMCSS
+registration, reverting it when stopping. It never modifies sample amplitudes.
+
+Copy audio details retains queued-audio target, sampled pre-write output padding,
+write count, MMCSS status, and missing-source readings. Padding readings cover
+writes only, not every event; none are an end-to-end latency measurement.
+Existing Stable, Event-driven, and Minimum delay modes keep their settings and
+NAudio output implementation. Existing saved mode/device choices are retained.
+Lean mode is opt-in, has not been auditioned on C6 hardware, and may underrun.
+Return to Event-driven capture if it crackles or drops out.
+
+Validation: byte-preserving playback adapter tests; exhaustive capacity/target/
+padding scheduling sweep; saved-mode compatibility; analysis and event-review
+checks. Windows render-device behavior still requires the user's listening test.
+References:
+https://learn.microsoft.com/windows/win32/api/audioclient/nf-audioclient-iaudioclient-getcurrentpadding
+https://learn.microsoft.com/windows/win32/api/avrt/nf-avrt-avsetmmthreadcharacteristicsw

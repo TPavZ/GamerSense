@@ -172,6 +172,23 @@ foreach (var format in new[] { WaveFormat.CreateIeeeFloatWaveFormat(48000, 2), n
 }
 Console.WriteLine("PASS playback supply meter: byte-identical passthrough/zero fill, offset guards, partial/empty reads, duration accounting");
 
+// Sweep allocated capacities and existing padding: never overwrite queued frames
+// or fill beyond the target. A second pass without consumption must write nothing.
+foreach (int capacity in new[] { 480, 1056, 1440 })
+foreach (int target in new[] { 240, 480, 2000 })
+for (int padding = 0; padding <= capacity; padding++)
+{
+    int write = LeanSharedOutput.FramesToWrite(capacity, target, padding);
+    if (write < 0 || write > capacity - padding || padding + write > Math.Max(padding, Math.Min(target, capacity)) ||
+        LeanSharedOutput.FramesToWrite(capacity, target, padding + write) != 0)
+        throw new Exception("Lean renderer write would exceed free space or queue target");
+}
+if (LeanSharedOutput.FramesToWrite(1056, 480, 0) != 480 || LeanSharedOutput.FramesToWrite(1056, 480, 240) != 240)
+    throw new Exception("Lean renderer filled allocated capacity instead of target");
+try { LeanSharedOutput.FramesToWrite(480, 480, 481); throw new Exception("Invalid padding accepted"); }
+catch (ArgumentOutOfRangeException) { }
+Console.WriteLine("PASS lean render scheduling: capacity/target/padding sweep, no overwrite, idempotent refill, invalid padding rejected");
+
 if (AudioTimingProfile.Stable != new AudioTimingProfile(100, 30, 200, 40)) throw new Exception("Stable settings changed");
 if (AudioTimingProfile.Responsive.PrebufferMs != AudioTimingProfile.Stable.PrebufferMs ||
     AudioTimingProfile.Responsive.OutputLatencyMs != AudioTimingProfile.Stable.OutputLatencyMs ||
@@ -190,6 +207,10 @@ if (!eventSettings.LowerLatency || eventSettings.FastestLatency || legacySetting
 var fastestSettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>(
     System.Text.Json.JsonSerializer.Serialize(new GamerSense.Settings.AppSettings { LowerLatency = true, FastestLatency = true, InputDeviceId = "saved-input" }))!;
 if (!fastestSettings.FastestLatency || !fastestSettings.LowerLatency || fastestSettings.InputDeviceId != "saved-input") throw new Exception("Fastest mode memory failed");
+if (fastestSettings.LeanOutput || eventSettings.LeanOutput || legacySettings.LeanOutput) throw new Exception("Existing modes changed to lean output");
+var leanSettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>(
+    System.Text.Json.JsonSerializer.Serialize(new GamerSense.Settings.AppSettings { LeanOutput = true, InputDeviceId = "saved-input" }))!;
+if (!leanSettings.LeanOutput || leanSettings.InputDeviceId != "saved-input") throw new Exception("Lean mode memory failed");
 Console.WriteLine("PASS stable defaults, shorter responsive profile, diagnostic labeling, legacy device-selection compatibility");
 
 var retained = new PlaybackDiagnostics(AudioTimingProfile.Stable, "input", "output", "float48k", "float48k");

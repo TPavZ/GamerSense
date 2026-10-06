@@ -8,6 +8,7 @@ public sealed class AppSettings
     public string? OutputDeviceId { get; set; }
     public bool LowerLatency { get; set; }
     public bool FastestLatency { get; set; }
+    public bool LeanOutput { get; set; }
 
     private static string SettingsDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

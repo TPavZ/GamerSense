@@ -9,10 +9,10 @@ namespace GamerSense.Audio;
 // would create a different, uninitialized stream and report the wrong information.
 internal static class EndpointTimingReport
 {
-    public static string Read(WasapiCapture capture, WasapiOut output) =>
+    public static string Read(WasapiCapture capture, object output) =>
         "WINDOWS STREAM SETTINGS (retained after Stop)\n" +
         ReadClient("Capture", capture, typeof(WasapiCapture), capture.WaveFormat.SampleRate) +
-        ReadClient("Output", output, typeof(WasapiOut), output.OutputWaveFormat.SampleRate) +
+        ReadClient("Output", output, typeof(WasapiOut), output is LeanSharedOutput lean ? lean.WaveFormat.SampleRate : ((WasapiOut)output).OutputWaveFormat.SampleRate) +
         "Allocated capacity and driver-reported latency are partial readings; do not add them to estimate total audible delay.\n" +
         "A zero driver latency means no useful latency value was reported, not zero end-to-end delay.\n";
 
@@ -20,7 +20,8 @@ internal static class EndpointTimingReport
     {
         try
         {
-            var client = owner.GetField("audioClient", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(stream) as AudioClient;
+            var client = stream is LeanSharedOutput lean ? lean.Client :
+                owner.GetField("audioClient", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(stream) as AudioClient;
             if (client is null) return $"{name}: initialized client unavailable with this NAudio version.\n";
             // Query once after Init/StartRecording, outside the audio callback.
             string ReadValue(Func<string> get)

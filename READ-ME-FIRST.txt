@@ -1,16 +1,19 @@
-GamerSense v0.4.7 — minimum-delay test
+GamerSense v0.4.8 — lean shared output test
 
 Close the old app, extract the ENTIRE app ZIP to a new folder, open GamerSense.exe.
-Select Minimum delay (test) while stopped, then Start.
+Select Lean output (test) while stopped, then Start.
 Compare delay and quality during 2-3 minutes of continuous audio.
-Stop and Copy audio details, including WINDOWS STREAM SETTINGS and PLAYBACK SUPPLY.
-If audio crackles or drops out, return to Event-driven capture while stopped.
-That mode retains the clean v0.4.6 settings. Stable is also available.
+Stop and Copy audio details, including LEAN OUTPUT and PLAYBACK SUPPLY.
+If audio crackles, drops out, or fails to start, return to Event-driven capture
+while stopped. Previous Event-driven, Minimum delay, and Stable modes remain.
 
-Minimum delay requests capture 20 ms, output 10 ms, startup prebuffer 20 ms,
-capacity 80 ms. Actual Windows allocations may differ. It is not a claim of
-zero latency. Silence-fill counts include source pauses; test with continuous audio.
-Device and playback mode memory and the black/teal/gold icon are retained.
+Lean output targets one Windows device period (about 10 ms on C6), instead of
+filling the allocated output capacity. It starts after 10 ms of captured audio.
+Its requested 30 ms allocation is capacity/headroom, not queued-audio target.
+Capture uses the clean 50 ms event-driven allocation; events deliver audio promptly.
+Actual target, allocated capacity, padding, and silence fill are reported.
+No claim of zero or measured end-to-end latency. Hardware audition is required.
+Existing saved device and playback-mode choices are retained.
 
 SOURCE: Build using BUILD-DEBUG.bat, then launch the built GamerSense.exe.
 
@@ -19,3 +22,4 @@ Mark with the button, Ctrl+Alt+F8 if available, or F8 within this app.
 Select a marker, Load / refresh event clip, stop playback before Replay range.
 Choose a label and Keep/Reduce/Unsure, then Save WAV + label. Keep both files.
 Sound suppression is not implemented. Offline demo: Open audio sample > demo-vehicles.wav.
+The black/teal/gold icon, spectrum and matching are retained.
