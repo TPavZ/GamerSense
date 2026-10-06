@@ -1,27 +1,29 @@
-GamerSense v0.4.10 — direct refill test
+GamerSense v0.4.11 - direct cable capture comparison
 
-Close the old app, extract the ENTIRE app ZIP to a new folder, open GamerSense.exe.
-Select Direct refill (test) while stopped, then Start.
-Compare delay and quality during 2-3 minutes of continuous audio.
-Stop and Copy audio details, including LEAN OUTPUT and PLAYBACK SUPPLY.
-The fill policy should say Available captured samples only.
-If it crackles or drops out, return to Lean output (test) while stopped.
-All earlier modes, device/mode memory and the black/teal/gold icon are retained.
+1. Extract this entire ZIP into a new folder.
+2. App ZIP: open GamerSense.exe. Source ZIP: run BUILD-DEBUG.bat,
+   then open src/GamerSense/bin/Debug/net9.0-windows/GamerSense.exe.
+   The app needs the .NET 9 Desktop Runtime; building needs the .NET 9 SDK.
+3. Turn OFF Windows Listen to this device for CABLE Output.
+4. Choose playback mode: Direct cable capture (test).
+5. Choose GAME AUDIO / VIRTUAL DEVICE: CABLE Output (VB-Audio Virtual Cable).
+6. Choose TRUE OUTPUT: Speakers (C6).
+7. Keep the game/test video's audio output on CABLE Input.
+8. Press START GAMERSENSE. Verify clean audio first.
+9. Replay GamerSense-delay-test.avi using the same player and volume.
+   Record the screen and speakers with the phone in the same position.
+10. Send the recording labelled v0.4.11 Direct cable capture, along with
+    Copy audio details from this session (during playback or after Stop).
 
-C6 reported a fixed 10 ms shared period. Direct refill keeps that output target
-and the 10 ms startup reserve, but queues only available captured frames rather
-than precommitting silence when capture runs short. New samples wake playback.
-No samples are discarded, reordered, filtered, or amplified.
+This is an optional comparison mode, not a confirmed delay reduction.
+It reads the cable's recording endpoint instead of playback loopback.
+Direct refill playback settings, spectrum, matching, event review and icon
+are retained. No gain changes or sound filtering have been added.
 
-Refill attempts waiting for capture are counted separately. Windows can still
-emit silence if its queue empties; these are not measured audible glitch counts.
-The silence-fill metric excludes waits. Actual quality and total delay require
-listening tests; this update does not promise zero delay.
+If audio crackles or fails, Stop, select Direct refill (test), confirm
+CABLE Input and Speakers (C6), and Start. Existing input memory is separate.
+Keep Windows Listen off while running GamerSense.
 
-SOURCE: Build using BUILD-DEBUG.bat, then launch the built GamerSense.exe.
-
-EVENT REVIEW: The latest 60 seconds are retained for reviewing spikes.
-Mark with the button, Ctrl+Alt+F8 if available, or F8 within this app.
-Select a marker, Load / refresh event clip, stop playback before Replay range.
-Choose a label and Keep/Reduce/Unsure, then Save WAV + label. Keep both files.
-Sound suppression is not implemented. Offline demo: Open audio sample > demo-vehicles.wav.
+Validation: Debug/Release builds passed with zero warnings/errors;
+automated playback, analysis, settings and event-review checks passed.
+Real-device audio quality and audible delay still require your test.

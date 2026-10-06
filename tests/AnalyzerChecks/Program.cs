@@ -266,6 +266,18 @@ if (periodSettings.RealTimeRefill || leanSettings.RealTimeRefill || eventSetting
 var directSettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>(
     System.Text.Json.JsonSerializer.Serialize(new GamerSense.Settings.AppSettings { RealTimeRefill = true, InputDeviceId = "saved-input" }))!;
 if (!directSettings.RealTimeRefill || directSettings.InputDeviceId != "saved-input") throw new Exception("Direct refill mode memory failed");
+if (legacySettings.DirectCableCapture || directSettings.DirectCableCapture || legacySettings.DirectCaptureDeviceId is not null)
+    throw new Exception("Existing saved settings opted into recording capture");
+var cableSettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>(
+    System.Text.Json.JsonSerializer.Serialize(new GamerSense.Settings.AppSettings
+    { DirectCableCapture = true, DirectCaptureDeviceId = "cable-recording", InputDeviceId = "cable-playback", OutputDeviceId = "speakers" }))!;
+if (!cableSettings.DirectCableCapture || cableSettings.DirectCaptureDeviceId != "cable-recording" ||
+    cableSettings.InputDeviceId != "cable-playback" || cableSettings.OutputDeviceId != "speakers")
+    throw new Exception("Separate endpoint memories failed round trip");
+if (AudioTimingProfile.DirectCable with { DirectCapture = false } != AudioTimingProfile.RealTime ||
+    !AudioTimingProfile.DirectCable.DirectCapture || !AudioTimingProfile.DirectCable.RealTimeRefill)
+    throw new Exception("Direct cable comparison changed output timing or refill policy");
+Console.WriteLine("PASS recording capture opt-in, separate endpoint memories, unchanged direct-refill playback timing");
 Console.WriteLine("PASS stable defaults, shorter responsive profile, diagnostic labeling, legacy device-selection compatibility");
 
 var retained = new PlaybackDiagnostics(AudioTimingProfile.Stable, "input", "output", "float48k", "float48k");

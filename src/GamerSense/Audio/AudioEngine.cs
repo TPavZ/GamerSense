@@ -22,18 +22,20 @@ public sealed class AudioEngine : IDisposable
     public bool LeanOutput { get; set; }
     public bool LowEnginePeriod { get; set; }
     public bool RealTimeRefill { get; set; }
+    public bool DirectCableCapture { get; set; }
+    private string _captureRoute = "Not started";
     public AudioTimingProfile ActiveTiming { get; private set; } = AudioTimingProfile.Stable;
     private string _captureFormat = "Not started", _outputMixFormat = "Not started";
     private PlaybackDiagnostics? _diagnostics;
     private MeteredPlaybackProvider? _playbackMeter;
     private string _endpointTiming = "No Windows stream settings recorded yet.\n";
     public EventMonitor? Events { get; private set; }
-    public string AudioDetails => $"GamerSense v0.4.10\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
+    public string AudioDetails => $"GamerSense v0.4.11\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         (ActiveTiming.LowEnginePeriod ? "Low-period mode: Windows chooses capacity from its supported period; 30 ms request applies only to fallback.\n" : "") +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
         $"Queued audio now: {QueuedAudioMs:F1} ms\nLast capture batch: {CaptureBatchMs:F1} ms\n" +
-        $"Capture format: {_captureFormat}\nOutput device mix format: {_outputMixFormat}\nMatching enabled: {DetectionEnabled}\n" +
+        $"Capture route: {_captureRoute}\nCapture format: {_captureFormat}\nOutput device mix format: {_outputMixFormat}\nMatching enabled: {DetectionEnabled}\n" +
         "Queue/batch values are partial diagnostics, not total end-to-end latency.\n\n" +
         _endpointTiming + "\n" + (_leanOutput?.Report() ?? _leanReport) + "\n" + (_playbackMeter?.Report() ?? "No playback supply readings yet.\n") +
         "\nPLAYBACK SESSION SUMMARY (retained after Stop)\n" + (_diagnostics?.Report() ?? "No playback session recorded yet.");
@@ -56,15 +58,23 @@ public sealed class AudioEngine : IDisposable
         _endpointTiming = "Windows stream settings unavailable: session startup did not complete.\n";
         _playbackMeter = null;
         _leanReport = "";
-        ActiveTiming = RealTimeRefill ? AudioTimingProfile.RealTime : LowEnginePeriod ? AudioTimingProfile.LowPeriod : LeanOutput ? AudioTimingProfile.Lean : FastestLatency ? AudioTimingProfile.Fastest : LowerLatency ? AudioTimingProfile.Responsive : AudioTimingProfile.Stable;
+        ActiveTiming = DirectCableCapture ? AudioTimingProfile.DirectCable : RealTimeRefill ? AudioTimingProfile.RealTime : LowEnginePeriod ? AudioTimingProfile.LowPeriod : LeanOutput ? AudioTimingProfile.Lean : FastestLatency ? AudioTimingProfile.Fastest : LowerLatency ? AudioTimingProfile.Responsive : AudioTimingProfile.Stable;
 
         _enumerator = new MMDeviceEnumerator();
         var captureEndpoint = _enumerator.GetDevice(captureDeviceId);
         var outputEndpoint = _enumerator.GetDevice(outputDeviceId);
+        if (outputEndpoint.DataFlow != DataFlow.Render)
+            throw new InvalidOperationException("Choose a playback device for True output.");
+        if (captureEndpoint.DataFlow != (DirectCableCapture ? DataFlow.Capture : DataFlow.Render))
+            throw new InvalidOperationException(DirectCableCapture
+                ? "Direct cable capture needs a recording device. Choose CABLE Output."
+                : "This mode needs a playback device. Choose CABLE Input.");
+        _captureRoute = DirectCableCapture ? "Recording endpoint (CABLE Output); no loopback" : "Playback endpoint loopback";
         using (var mixClient = outputEndpoint.AudioClient)
             _outputMixFormat = mixClient.MixFormat.ToString();
 
-        _capture = ActiveTiming != AudioTimingProfile.Stable ? new ResponsiveLoopbackCapture(captureEndpoint, ActiveTiming.CaptureBufferMs)
+        _capture = DirectCableCapture ? new WasapiCapture(captureEndpoint, true, ActiveTiming.CaptureBufferMs)
+            : ActiveTiming != AudioTimingProfile.Stable ? new ResponsiveLoopbackCapture(captureEndpoint, ActiveTiming.CaptureBufferMs)
             : new WasapiLoopbackCapture(captureEndpoint);
         _captureFormat = _capture.WaveFormat.ToString();
         _diagnostics = new PlaybackDiagnostics(ActiveTiming, captureEndpoint.FriendlyName, outputEndpoint.FriendlyName,
@@ -82,7 +92,7 @@ public sealed class AudioEngine : IDisposable
 
         // Shared-mode event sync is appropriate for the prototype and avoids
         // forcing the physical device into a format it does not natively use.
-        if (LeanOutput || LowEnginePeriod || RealTimeRefill)
+        if (LeanOutput || LowEnginePeriod || RealTimeRefill || DirectCableCapture)
         {
             _leanOutput = new LeanSharedOutput(outputEndpoint, _playbackMeter, ActiveTiming.LowEnginePeriod, ActiveTiming.RealTimeRefill);
             _leanOutput.Faulted += message => Faulted?.Invoke(message);
@@ -104,7 +114,7 @@ public sealed class AudioEngine : IDisposable
             () => { analyzer.Reset(); detector.Reset(); events.MarkGap(); });
         _capture.StartRecording();
         _endpointTiming = EndpointTimingReport.Read(_capture, (object?)_leanOutput ?? _output!) +
-            $"Capture scheduling: {(ActiveTiming != AudioTimingProfile.Stable && ResponsiveLoopbackCapture.UsesEventSync ? "Windows audio events" : "Polling")}\n";
+            $"Capture scheduling: {(DirectCableCapture || (ActiveTiming != AudioTimingProfile.Stable && ResponsiveLoopbackCapture.UsesEventSync) ? "Windows audio events" : "Polling")}\n";
         IsRunning = true;
     }
 

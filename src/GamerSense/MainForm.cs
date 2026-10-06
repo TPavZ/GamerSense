@@ -36,7 +36,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.4.10 — Event review";
+        Text = "GamerSense v0.4.11 — Event review";
         using (var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("GamerSense.AppIcon.ico"))
         {
             if (iconStream is not null) { _appIcon = new System.Drawing.Icon(iconStream); Icon = _appIcon; }
@@ -69,13 +69,14 @@ public sealed class MainForm : Form
         panel.Controls.Add(outputLabel);
         panel.Controls.Add(_output);
         panel.Controls.Add(new Label { Text = "PLAYBACK MODE — change while stopped", AutoSize = true });
-        _playbackMode.Items.AddRange(new object[] { "Stable playback", "Event-driven capture", "Minimum delay (test)", "Lean output (test)", "Low-period output (test)", "Direct refill (test)" });
-        _playbackMode.SelectedIndex = _settings.RealTimeRefill ? 5 : _settings.LowEnginePeriod ? 4 : _settings.LeanOutput ? 3 : _settings.FastestLatency ? 2 : _settings.LowerLatency ? 1 : 0;
+        _playbackMode.Items.AddRange(new object[] { "Stable playback", "Event-driven capture", "Minimum delay (test)", "Lean output (test)", "Low-period output (test)", "Direct refill (test)", "Direct cable capture (test)" });
+        _playbackMode.SelectedIndex = _settings.DirectCableCapture ? 6 : _settings.RealTimeRefill ? 5 : _settings.LowEnginePeriod ? 4 : _settings.LeanOutput ? 3 : _settings.FastestLatency ? 2 : _settings.LowerLatency ? 1 : 0;
         _engine.LowerLatency = _settings.LowerLatency;
         _engine.FastestLatency = _settings.FastestLatency;
         _engine.LeanOutput = _settings.LeanOutput;
         _engine.LowEnginePeriod = _settings.LowEnginePeriod;
         _engine.RealTimeRefill = _settings.RealTimeRefill;
+        _engine.DirectCableCapture = _settings.DirectCableCapture;
         panel.Controls.Add(_playbackMode);
         panel.Controls.Add(new Label { Text = "LIVE AUDIO", AutoSize = true });
         panel.Controls.Add(_meter);
@@ -120,6 +121,8 @@ public sealed class MainForm : Form
         _soundMatching.CheckedChanged += (_, _) => _engine.DetectionEnabled = _soundMatching.Checked;
         _playbackMode.SelectedIndexChanged += (_, _) =>
         {
+            SaveDeviceSelections();
+            _settings.DirectCableCapture = _playbackMode.SelectedIndex == 6;
             _settings.LowerLatency = _playbackMode.SelectedIndex >= 1;
             _settings.FastestLatency = _playbackMode.SelectedIndex == 2;
             _settings.LeanOutput = _playbackMode.SelectedIndex == 3;
@@ -130,6 +133,8 @@ public sealed class MainForm : Form
             _engine.LeanOutput = _settings.LeanOutput;
             _engine.LowEnginePeriod = _settings.LowEnginePeriod;
             _engine.RealTimeRefill = _settings.RealTimeRefill;
+            _engine.DirectCableCapture = _settings.DirectCableCapture;
+            LoadDevices();
             _settings.Save();
         };
         _analysisTimer.Tick += (_, _) =>
@@ -177,14 +182,15 @@ public sealed class MainForm : Form
         _loadingDevices = true;
         try
         {
-            var devices = _devices.GetActiveRenderDevices().ToList();
+            var outputs = _devices.GetActiveRenderDevices().ToList();
+            var devices = _settings.DirectCableCapture ? _devices.GetActiveCaptureDevices().ToList() : outputs;
             _input.DataSource = devices.ToList();
-            _output.DataSource = devices.ToList();
+            _output.DataSource = outputs;
             _input.DisplayMember = nameof(AudioDeviceInfo.Name);
             _output.DisplayMember = nameof(AudioDeviceInfo.Name);
 
-            var savedInputIndex = devices.FindIndex(d => d.Id == _settings.InputDeviceId);
-            var savedOutputIndex = devices.FindIndex(d => d.Id == _settings.OutputDeviceId);
+            var savedInputIndex = devices.FindIndex(d => d.Id == (_settings.DirectCableCapture ? _settings.DirectCaptureDeviceId : _settings.InputDeviceId));
+            var savedOutputIndex = outputs.FindIndex(d => d.Id == _settings.OutputDeviceId);
 
             if (savedInputIndex >= 0)
             {
@@ -192,7 +198,7 @@ public sealed class MainForm : Form
             }
             else
             {
-                var cable = _devices.FindVirtualCable();
+                var cable = _settings.DirectCableCapture ? devices.FirstOrDefault(d => d.Name.Contains("CABLE Output", StringComparison.OrdinalIgnoreCase)) : _devices.FindVirtualCable();
                 if (cable is not null)
                 {
                     var cableIndex = devices.FindIndex(d => d.Id == cable.Id);
@@ -203,7 +209,9 @@ public sealed class MainForm : Form
             if (savedOutputIndex >= 0)
                 _output.SelectedIndex = savedOutputIndex;
 
-            if (_devices.FindVirtualCable() is not null)
+            if (_settings.DirectCableCapture)
+                SetStatus("Direct cable test: choose CABLE Output; keep game/player output on CABLE Input. Turn Windows Listen off.");
+            else if (_devices.FindVirtualCable() is not null)
                 SetStatus("Virtual audio device detected. Device selections are remembered automatically.");
             else
                 SetStatus("No VB-CABLE playback device detected yet.");
@@ -220,7 +228,10 @@ public sealed class MainForm : Form
             return;
 
         if (_input.SelectedItem is AudioDeviceInfo input)
-            _settings.InputDeviceId = input.Id;
+        {
+            if (_settings.DirectCableCapture) _settings.DirectCaptureDeviceId = input.Id;
+            else _settings.InputDeviceId = input.Id;
+        }
         if (_output.SelectedItem is AudioDeviceInfo output)
             _settings.OutputDeviceId = output.Id;
 

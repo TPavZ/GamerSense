@@ -1,5 +1,0 @@
-[
- {"file":"c1.ogg","labels":["nearby mortar impacts/explosions","own-character running"],"verified":false,"timing":"pending","trainingIncluded":false},
- {"file":"c2.ogg","labels":["player building/repairing in-game items","background explosions"],"verified":false,"timing":"pending","trainingIncluded":false},
- {"file":"c3.ogg","labels":["helicopter rocket fire","ground rocket impacts/explosions"],"verified":false,"timing":"pending","trainingIncluded":false}
-]

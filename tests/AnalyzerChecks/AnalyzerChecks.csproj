@@ -3,4 +3,3 @@
 <ItemGroup><ProjectReference Include="../../src/GamerSense/GamerSense.csproj" /></ItemGroup>
 <ItemGroup><Content Include="Fixtures/**/*" CopyToOutputDirectory="PreserveNewest" /><Content Include="../../src/GamerSense/Models/wardogs-model.json" Link="Models/wardogs-model.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup></Project>
 
-

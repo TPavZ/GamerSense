@@ -455,3 +455,22 @@ Validation simulates source gaps and smaller output packets, ensuring no future
 silence commitment and byte-identical ordered samples. Previous checks cover
 scheduling bounds, mode migration, analysis, and event review. C6 listening
 quality and total latency still require testing. This is not a zero-delay claim.
+
+## v0.4.11 — direct cable capture comparison
+
+An optional seventh playback mode, Direct cable capture (test), reads from a
+recording endpoint with event-driven shared-mode WASAPI. Choose CABLE Output
+as the game audio device and Speakers (C6) as True output. Leave the game/test
+player sending to CABLE Input, and disable Windows Listen to this device.
+
+This replaces playback loopback capture only for this mode. Its playback uses
+the v0.4.10 Direct refill policy and the same 50 ms requested capture capacity,
+30 ms output capacity, 10 ms prebuffer, and 80 ms app buffer capacity. Capture
+uses the selected recording device's native mix format. No samples are filtered
+or gain-adjusted. All six previous modes remain available. Recording-endpoint
+selection is saved separately from the existing playback-endpoint selection.
+
+This is an experiment, not a verified latency improvement. Repeat the supplied
+flash/click test, record it with the same phone position, and copy the new audio
+details while playback is active or after Stop. If audio becomes noisy or stalls,
+return to Direct refill with CABLE Input; the previous input selection is retained.

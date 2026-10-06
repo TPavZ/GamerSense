@@ -14,6 +14,13 @@ public sealed class AudioDeviceManager
             .ToList();
     }
 
+    public IReadOnlyList<AudioDeviceInfo> GetActiveCaptureDevices()
+    {
+        using var enumerator = new MMDeviceEnumerator();
+        return enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active)
+            .Select(d => new AudioDeviceInfo(d.ID, d.FriendlyName)).OrderBy(d => d.Name).ToList();
+    }
+
     public AudioDeviceInfo? FindVirtualCable()
     {
         return GetActiveRenderDevices().FirstOrDefault(d =>

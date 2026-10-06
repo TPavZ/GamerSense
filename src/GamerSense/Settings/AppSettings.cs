@@ -11,6 +11,8 @@ public sealed class AppSettings
     public bool LeanOutput { get; set; }
     public bool LowEnginePeriod { get; set; }
     public bool RealTimeRefill { get; set; }
+    public bool DirectCableCapture { get; set; }
+    public string? DirectCaptureDeviceId { get; set; }
 
     private static string SettingsDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
