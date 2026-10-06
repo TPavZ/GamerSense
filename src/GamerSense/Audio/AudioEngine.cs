@@ -10,6 +10,8 @@ public sealed class AudioEngine : IDisposable
     private BufferedWaveProvider? _buffer;
     private MMDeviceEnumerator? _enumerator;
     private bool _outputStarted;
+    private LiveAnalyzer? _analyzer;
+    public AnalysisFrame? Analysis => _analyzer?.Latest;
 
     // Stability-first values for the prototype. Once passthrough is clean we can
     // measure and tune these downward instead of guessing at ultra-low latency.
@@ -46,6 +48,7 @@ public sealed class AudioEngine : IDisposable
         _output.Init(_buffer);
 
         _outputStarted = false;
+        _analyzer = new LiveAnalyzer(_capture.WaveFormat);
         _capture.StartRecording();
         IsRunning = true;
     }
@@ -68,6 +71,7 @@ public sealed class AudioEngine : IDisposable
                 _output.Play();
                 _outputStarted = true;
             }
+            _analyzer?.Tap(e.Buffer, e.BytesRecorded);
         }
         catch (Exception ex)
         {
@@ -84,6 +88,8 @@ public sealed class AudioEngine : IDisposable
     public void Stop()
     {
         IsRunning = false;
+        _analyzer?.Dispose();
+        _analyzer = null;
         _outputStarted = false;
 
         if (_capture is not null)
