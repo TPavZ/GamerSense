@@ -24,11 +24,19 @@ public sealed class MainForm : Form
     private readonly ComboBox _playbackMode = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 430 };
     private readonly Label _captureText = new() { AutoSize = true, Text = "Capture batch: 0 ms" };
     private readonly Button _copyAudioDetails = new() { Text = "Copy audio details", Width = 170 };
+    private readonly EventReviewPanel _review;
+    private bool _hotkeyRegistered;
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static extern bool RegisterHotKey(IntPtr window, int id, uint modifiers, uint key);
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static extern bool UnregisterHotKey(IntPtr window, int id);
 
     public MainForm()
     {
-        Text = "GamerSense v0.3.4 — Experimental";
-        Width = 540;
+        Text = "GamerSense v0.4.0 — Event review";
+        Width = 720;
         Height = 860;
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(18, 18, 22);
@@ -77,7 +85,15 @@ public sealed class MainForm : Form
         panel.Controls.Add(buttons);
         panel.Controls.Add(_status);
         panel.Controls.Add(_copyAudioDetails);
-        Controls.Add(panel);
+        _review = new EventReviewPanel(() => _engine.Events, () => _engine.IsRunning,
+            () => (_output.SelectedItem as AudioDeviceInfo)?.Id == (_input.SelectedItem as AudioDeviceInfo)?.Id
+                ? null : (_output.SelectedItem as AudioDeviceInfo)?.Id);
+        var tabs = new TabControl { Dock = DockStyle.Fill, ForeColor = Color.Black };
+        var playback = new TabPage("Playback") { BackColor = BackColor, ForeColor = ForeColor };
+        var review = new TabPage("Event review") { BackColor = BackColor, ForeColor = ForeColor };
+        playback.Controls.Add(panel); review.Controls.Add(_review); tabs.TabPages.Add(playback); tabs.TabPages.Add(review); Controls.Add(tabs);
+        KeyPreview = true;
+        KeyDown += (_, e) => { if (e.KeyCode == Keys.F8 && !e.Control && !e.Alt) { _review.MarkLive(); e.Handled = true; } };
 
         _refresh.Click += (_, _) => LoadDevices();
         _copyAudioDetails.Click += (_, _) =>
@@ -117,9 +133,21 @@ public sealed class MainForm : Form
             SaveDeviceSelections();
             _analysisTimer.Stop();
             _analysisTimer.Dispose();
+            _review.StopReplay();
+            if (_hotkeyRegistered) UnregisterHotKey(Handle, 4108);
             _engine.Dispose();
         };
-        Shown += (_, _) => LoadDevices();
+        Shown += (_, _) =>
+        {
+            LoadDevices();
+            _hotkeyRegistered = RegisterHotKey(Handle, 4108, 0x4003, (uint)Keys.F8);
+            if (!_hotkeyRegistered) SetStatus("Global mark shortcut unavailable; use the Mark moment button or F8 in this app.");
+        };
+    }
+    protected override void WndProc(ref Message message)
+    {
+        if (message.Msg == 0x0312 && message.WParam.ToInt32() == 4108) { _review?.MarkLive(); return; }
+        base.WndProc(ref message);
     }
 
     private void LoadDevices()
@@ -200,6 +228,7 @@ public sealed class MainForm : Form
 
         try
         {
+            _review.StopReplay();
             _engine.Start(input.Id, output.Id);
             _start.Text = "STOP GAMERSENSE";
             _playbackMode.Enabled = false;

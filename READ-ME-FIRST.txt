@@ -1,9 +1,24 @@
-GamerSense v0.3.4 — retained playback diagnostics
-Build with BUILD-DEBUG.bat, then launch the built GamerSense.exe.
-Keep Stable playback selected. Play game audio for 20–30 seconds, then click
-Copy audio details. You may Stop first: the last playback-session measurements
-are now retained. Paste the entire report into chat.
+GamerSense v0.4.0 — event monitoring and review
 
-This update is for diagnosis, not a proven latency fix. Stable audio timing,
-device selection memory, observer queue, and conservative matching are retained.
+Build with BUILD-DEBUG.bat, then launch the built GamerSense.exe.
+Use Stable playback. The Event review tab keeps the latest 60 seconds and
+marks loud threshold crossings and sudden level rises. You can also mark by
+button, F8 while focused, or Ctrl+Alt+F8 globally if registration succeeds.
+
+Offline demo: while stopped, Event review > Open audio sample > demo-vehicles.wav.
+On Playback first select your true output for review playback.
+
+Select a marker, adjust seconds before/after, then Load / refresh event clip.
+Stop live playback before Replay range. Adjust start/end seconds to focus the
+waveform and spectrum. Select a sound label, Keep/Reduce/Unsure, and notes.
+Save WAV + label writes the audio and a JSON sidecar in your chosen folder.
+
+No suppression is applied yet. These preferences supply examples for developing
+controls to reduce loud/distracting audio while preserving useful combat cues.
+Old audio expires after 60 seconds. Frozen clips survive until replaced; Stop
+retains the current session. Save before closing or starting a new session.
+
+BUILD-DEBUG.bat, remembered device IDs, Stable timing, and prior diagnostics
+are preserved. The half-second audible delay remains unresolved.
 Developer checks: dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj
+See README.md for format support, recorder gaps, and validation limitations.

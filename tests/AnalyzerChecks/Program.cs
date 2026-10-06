@@ -171,3 +171,51 @@ if (retained.Report() != prior) throw new Exception("Stopped/invalid metrics ove
 var fresh = new PlaybackDiagnostics(AudioTimingProfile.Stable, "input", "output", "float48k", "float48k");
 if (!fresh.Report().Contains("No audio packets")) throw new Exception("New session retained prior metrics");
 Console.WriteLine("PASS retained session timing, valid sample accounting, and fresh session reset");
+
+var eventFormat = WaveFormat.CreateIeeeFloatWaveFormat(48000, 2);
+var monitor = new EventMonitor(eventFormat, seconds: 6);
+byte[] signal = new byte[eventFormat.AverageBytesPerSecond / 10];
+for (int i = 0; i < signal.Length; i += 4) Buffer.BlockCopy(BitConverter.GetBytes(.05f), 0, signal, i, 4);
+for (int i = 0; i < 30; i++) monitor.Tap(signal, signal.Length);
+var manual = monitor.Mark();
+for (int i = 0; i < signal.Length; i += 4) Buffer.BlockCopy(BitConverter.GetBytes(.8f), 0, signal, i, 4);
+var originalSignal = signal.ToArray();
+for (int i = 0; i < 30; i++) monitor.Tap(signal, signal.Length);
+if (!signal.SequenceEqual(originalSignal)) throw new Exception("Event monitor changed source bytes");
+var markers = monitor.Markers();
+if (!markers.Any(x => x.Kind == "Loud spike") || !markers.Any(x => x.Kind == "Manual mark")) throw new Exception("Event markers missing");
+if (markers.Count(x => x.Kind == "Loud spike") != 1) throw new Exception("Sustained loud audio repeatedly marked");
+var clip = monitor.Extract(manual, 1, 2);
+if (Math.Abs(clip.StartSeconds - 2) > .001 || Math.Abs(clip.EndSeconds - 5) > .001 || clip.Audio.Length != eventFormat.AverageBytesPerSecond * 3) throw new Exception("Event extraction bounds wrong");
+var savePath = Path.Combine(AppContext.BaseDirectory, "event-export-test.wav");
+try
+{
+    EventMonitor.Save(clip, savePath, "explosions / mortars", "Reduce", "movement overlap");
+    using var wav = new WaveFileReader(savePath);
+    if (Math.Abs(wav.TotalTime.TotalSeconds - 3) > .001 || wav.WaveFormat.SampleRate != 48000) throw new Exception("Saved WAV invalid");
+    using var metadata = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.ChangeExtension(savePath, ".json")));
+    if (metadata.RootElement.GetProperty("intent").GetString() != "Reduce") throw new Exception("Intent label missing");
+}
+finally { File.Delete(savePath); File.Delete(Path.ChangeExtension(savePath, ".json")); }
+monitor.MarkGap();
+var gapMarker = monitor.Mark(); monitor.Tap(signal, signal.Length);
+bool blockedGap = false;try { monitor.Extract(gapMarker, 1, 0); } catch (InvalidOperationException) { blockedGap = true; }
+// A gap exactly at the clip end is outside the extracted interval. Include post-event data.
+try { monitor.Extract(gapMarker, 1, .1); } catch (InvalidOperationException) { blockedGap = true; }
+if (!blockedGap) throw new Exception("Recording gap accepted");
+for (int i = 0; i < 70; i++) monitor.Tap(signal, signal.Length);
+bool expired = false; try { monitor.Extract(manual, 1, 2); } catch (InvalidOperationException) { expired = true; }
+if (!expired) throw new Exception("Expired event accepted");
+if (!clip.Audio.Any(x => x != 0)) throw new Exception("Frozen clip lost contents after ring wrap");
+Console.WriteLine("PASS event monitoring: spike/manual markers, sustained audio cooldown, immutable bytes, context extraction, WAV/JSON intent export, gap rejection, ring expiry, frozen clip retention");
+
+using (var demo = new AudioFileReader(Path.Combine(AppContext.BaseDirectory, "Samples", "demo-vehicles.wav")))
+{
+    var offline = new EventMonitor(demo.WaveFormat, sourceName: "demo-vehicles.wav");
+    var bytes = new byte[demo.WaveFormat.AverageBytesPerSecond / 20]; int count;
+    while ((count = demo.Read(bytes, 0, bytes.Length)) > 0) offline.Tap(bytes, count);
+    if (offline.Markers().Length == 0 || Math.Abs(offline.Seconds - demo.TotalTime.TotalSeconds) > .01) throw new Exception("Offline demo import failed");
+    var eventClip = offline.Extract(offline.Markers()[0]);
+    if (eventClip.SourceName != "demo-vehicles.wav" || eventClip.Audio.Length == 0) throw new Exception("Offline event review failed");
+}
+Console.WriteLine("PASS offline vehicle demo: decoding, activity markers, duration, and context extraction");

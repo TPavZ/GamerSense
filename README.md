@@ -244,3 +244,64 @@ https://vb-audio.com/Cable/VBCABLE_ReferenceManual.pdf
 Validation: all existing checks plus retained summary statistics, invalid/stopped
 sample rejection, and fresh-session reset passed. Debug and Release builds
 passed with 0 warnings/errors. Physical route latency remains unverified.
+
+## v0.4.0 — live event monitoring and review
+
+Playback has a new Event review tab. Its independent observer keeps a 60-second
+native-format rolling recording in memory (about 23 MB at 48 kHz stereo float),
+plus a peak-level timeline and up to 200 markers. It detects loud-threshold
+crossings (default -18 dBFS, editable) and sudden RMS rises (10 dB above a moving
+baseline), with a two-second automatic cooldown. Steady loud audio does not
+continuously emit loud markers. These are activity suggestions, not sound-type
+recognition, distance estimation, or identification of direct combat.
+
+Manual marking: use Mark moment, F8 when the app is focused, or Ctrl+Alt+F8
+while the app is running. The global shortcut uses Windows RegisterHotKey;
+conflicts are reported and the button/local shortcut remain available. Gameplay
+hotkey behavior has not been validated on the user's setup.
+https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey
+
+Click a timeline marker or list item to freeze a clip (default 2 seconds before,
+3 after). A very recent event may not yet have its requested post-event audio:
+wait, then press Load / refresh event clip. Editing the range zooms its waveform;
+the spectrum samples the end of that range. Stop live playback before replay:
+review goes straight to the selected true output, so it does not feed back into
+live capture. Starting playback stops any review replay.
+
+Choose a sound label and a preference: Keep, Reduce, or Unsure. Save WAV + label
+writes the selected audio range and a JSON sidecar with relative/session times,
+source/session identity, trigger kind, intent, notes, and manual review status.
+The label covers the whole saved range and may include overlapping sounds.
+Preferences are annotations for future suppression development; they do not
+change audible playback or automatically become trusted classifier training.
+
+Memory retention: old audio rolls out after 60 seconds and its markers show
+expired. A frozen selected clip remains reviewable until replaced. Stop retains
+the current rolling recording; starting a new session replaces it. Save clips
+before closing the app. No continuous disk recording or automatic upload occurs.
+When the observer queue drops packets, gaps are marked internally and extracts
+crossing a gap are rejected. Playback continues independently. Session times
+follow observed capture frames, not video or wall-clock time; observer gaps are
+not assigned an invented duration.
+
+Offline: while stopped, Open audio sample can load WAV, MP3, and MP4 via the
+installed Windows decoders. Only the latest 60 seconds of a longer sample stay
+available. WAV is preferred; decoder failures appear in the review status.
+Offline samples do not alter game audio or train the model. Show live session
+switches back to the retained/current capture recording.
+
+Stable playback, saved device IDs, conservative pattern matching, the bounded
+analysis queue, and retained timing diagnostics are preserved. The reported
+latency issue is still open; no latency fix is claimed in this release.
+
+Validation: Debug/Release compile with 0 warnings/errors. Regression checks plus
+spike/manual marking, sustained loud-event behavior, immutable source bytes,
+context extraction, native WAV/JSON export including Reduce intent, dropped-gap
+rejection, ring expiry and frozen-clip retention passed. Physical replay/live
+capture, UI layout, and the in-game shortcut need user testing.
+
+An offline vehicle demo is included in Samples/demo-vehicles.wav (your supplied
+VehiclesNonGunner audio). Open audio sample starts in that folder. Automated
+checks decoded the demo, detected activity markers, checked capture duration,
+and extracted context successfully. This does not verify the demo's sound-type
+labels; those remain manual review tasks.

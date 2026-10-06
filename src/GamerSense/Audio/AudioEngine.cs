@@ -19,7 +19,8 @@ public sealed class AudioEngine : IDisposable
     public AudioTimingProfile ActiveTiming { get; private set; } = AudioTimingProfile.Stable;
     private string _captureFormat = "Not started", _outputMixFormat = "Not started";
     private PlaybackDiagnostics? _diagnostics;
-    public string AudioDetails => $"GamerSense v0.3.4\nRunning now: {IsRunning}\nMode: {(ActiveTiming == AudioTimingProfile.Responsive ? "Lower latency" : "Stable")}\n" +
+    public EventMonitor? Events { get; private set; }
+    public string AudioDetails => $"GamerSense v0.4.0\nRunning now: {IsRunning}\nMode: {(ActiveTiming == AudioTimingProfile.Responsive ? "Lower latency" : "Stable")}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
         $"Queued audio now: {QueuedAudioMs:F1} ms\nLast capture batch: {CaptureBatchMs:F1} ms\n" +
@@ -75,8 +76,9 @@ public sealed class AudioEngine : IDisposable
             Path.Combine(AppContext.BaseDirectory, "Models", "wardogs-model.json")) { Enabled = _detectionEnabled };
         var analyzer = _analyzer;
         var detector = _detector;
-        _tap = new AnalysisTap((data, count) => { analyzer.Tap(data, count); detector.Tap(data, count); },
-            () => { analyzer.Reset(); detector.Reset(); });
+        var events = Events = new EventMonitor(_capture.WaveFormat);
+        _tap = new AnalysisTap((data, count) => { analyzer.Tap(data, count); detector.Tap(data, count); events.Tap(data, count); },
+            () => { analyzer.Reset(); detector.Reset(); events.MarkGap(); });
         _capture.StartRecording();
         IsRunning = true;
     }
