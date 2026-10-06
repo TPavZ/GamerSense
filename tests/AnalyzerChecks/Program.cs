@@ -148,8 +148,8 @@ using (var release = new ManualResetEventSlim())
 Console.WriteLine("PASS pooled analysis queue: immutable copies, bounded backlog, nonblocking producer, stale drop, gap reset, disposal");
 
 if (AudioTimingProfile.Stable != new AudioTimingProfile(100, 30, 200, 40)) throw new Exception("Stable settings changed");
-if (AudioTimingProfile.Responsive.PrebufferMs >= AudioTimingProfile.Stable.PrebufferMs ||
-    AudioTimingProfile.Responsive.OutputLatencyMs >= AudioTimingProfile.Stable.OutputLatencyMs ||
+if (AudioTimingProfile.Responsive.PrebufferMs != AudioTimingProfile.Stable.PrebufferMs ||
+    AudioTimingProfile.Responsive.OutputLatencyMs != AudioTimingProfile.Stable.OutputLatencyMs ||
     AudioTimingProfile.Responsive.CaptureBufferMs >= AudioTimingProfile.Stable.CaptureBufferMs ||
     AudioTimingProfile.Responsive.BufferCapacityMs <= AudioTimingProfile.Responsive.PrebufferMs)
     throw new Exception("Invalid responsive profile");

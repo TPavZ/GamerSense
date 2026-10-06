@@ -20,7 +20,7 @@ public sealed class AudioEngine : IDisposable
     private string _captureFormat = "Not started", _outputMixFormat = "Not started";
     private PlaybackDiagnostics? _diagnostics;
     public EventMonitor? Events { get; private set; }
-    public string AudioDetails => $"GamerSense v0.4.3\nRunning now: {IsRunning}\nMode: {(ActiveTiming == AudioTimingProfile.Responsive ? "Lower latency" : "Stable")}\n" +
+    public string AudioDetails => $"GamerSense v0.4.4\nRunning now: {IsRunning}\nMode: {(ActiveTiming == AudioTimingProfile.Responsive ? "Reduced delay" : "Stable")}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
         $"Queued audio now: {QueuedAudioMs:F1} ms\nLast capture batch: {CaptureBatchMs:F1} ms\n" +

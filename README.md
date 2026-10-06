@@ -320,3 +320,12 @@ Revised the icon to a transparent background with primarily black headset and
 waveform surfaces, highlighted in teal, with gold listening arcs. Seven Windows
 icon sizes are bundled. App/window icon integration is preserved. Debug and
 Release builds passed with 0 warnings/errors. Audio behavior is unchanged.
+
+## v0.4.4 — revised reduced-delay test
+
+Reduced delay (test) now requests 50 ms capture instead of 100 ms Stable or
+20 ms in the former test. Output remains 30 ms and startup prebuffer remains
+40 ms, matching the clean Stable settings. Capacity is 150 ms (a ceiling,
+not a target delay). Stable playback remains the default and is unchanged.
+This is a controlled timing test, not a confirmed fix for the reported
+half-second delay. Actual hardware playback latency requires user testing.

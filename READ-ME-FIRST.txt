@@ -1,4 +1,4 @@
-GamerSense v0.4.3 — event monitoring and review
+GamerSense v0.4.4 — event monitoring and review
 
 Build with BUILD-DEBUG.bat, then launch the built GamerSense.exe.
 Use Stable playback. The Event review tab keeps the latest 60 seconds and
@@ -25,3 +25,5 @@ See README.md for format support, recorder gaps, and validation limitations.
 
 
 
+
+Delay test: while stopped select Reduced delay (test), then Start. Compare delay and quality; copy audio details afterward. Stable mode remains available.
