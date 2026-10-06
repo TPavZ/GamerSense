@@ -16,7 +16,7 @@ public sealed class MainForm : Form
     private readonly Label _status = new() { AutoSize = true, Text = "Ready" };
     private bool _loadingDevices;
     private readonly SpectrumView _spectrum = new();
-    private readonly Label _analysisText = new() { AutoSize = true, Text = "Analyzer ready — playback unchanged" };
+    private readonly Label _analysisText = new() { AutoSize = true, Text = "Input analyzer ready" };
     private readonly System.Windows.Forms.Timer _analysisTimer = new() { Interval = 50 };
     private readonly Label _detectionText = new() { AutoSize = true, Text = "Automatic spike monitor ready" };
     private readonly Label _queueText = new() { AutoSize = true, Text = "Queued audio: 0 ms" };
@@ -24,6 +24,7 @@ public sealed class MainForm : Form
     private readonly Label _captureText = new() { AutoSize = true, Text = "Capture batch: 0 ms" };
     private readonly Button _copyAudioDetails = new() { Text = "Copy audio details", Width = 170 };
     private readonly EventReviewPanel _review;
+    private readonly VolumePanel _volumePanel;
     private bool _hotkeyRegistered;
     private System.Drawing.Icon? _appIcon;
     [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
@@ -35,7 +36,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.4.18 — Live monitoring";
+        Text = "GamerSense v0.4.19 — Live volume routing";
         using (var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("GamerSense.AppIcon.ico"))
         {
             if (iconStream is not null) { _appIcon = new System.Drawing.Icon(iconStream); Icon = _appIcon; }
@@ -77,6 +78,7 @@ public sealed class MainForm : Form
         _engine.RealTimeRefill = _settings.RealTimeRefill;
         _engine.DirectCableCapture = _settings.DirectCableCapture;
         _engine.SavedEvents.AutoSaveEnabled = _settings.AutoSaveEvents;
+        _engine.VolumeControls.Levels = (_settings.Volumes ?? new VolumeLevels()) with { Enabled = false };
         _engine.DetectionEnabled = true;
         panel.Controls.Add(_playbackMode);
         panel.Controls.Add(new Label { Text = "LIVE AUDIO", AutoSize = true });
@@ -101,9 +103,13 @@ public sealed class MainForm : Form
             enabled => { _settings.AutoSaveEvents = enabled; _settings.Save(); }, _settings.ApprovedExportDirectory,
             folder => { _settings.ApprovedExportDirectory = folder; _settings.Save(); });
         var tabs = new TabControl { Dock = DockStyle.Fill, ForeColor = Color.Black };
+        _volumePanel = new VolumePanel(_engine.VolumeControls, () => _engine.RoutingStatus,
+            levels => { _settings.Volumes = levels; _settings.Save(); });
         var playback = new TabPage("Playback") { BackColor = BackColor, ForeColor = ForeColor };
         var review = new TabPage("Captured sounds") { BackColor = BackColor, ForeColor = ForeColor };
-        playback.Controls.Add(panel); review.Controls.Add(_review); tabs.TabPages.Add(playback); tabs.TabPages.Add(review); Controls.Add(tabs);
+        var volumes = new TabPage("Volume controls") { BackColor = BackColor, ForeColor = ForeColor };
+        playback.Controls.Add(panel); review.Controls.Add(_review); volumes.Controls.Add(_volumePanel);
+        tabs.TabPages.Add(playback); tabs.TabPages.Add(volumes); tabs.TabPages.Add(review); Controls.Add(tabs);
         KeyPreview = true;
         KeyDown += (_, e) => { if (e.KeyCode == Keys.F8 && !e.Control && !e.Alt) { _review.MarkLive(); e.Handled = true; } };
 
@@ -144,16 +150,18 @@ public sealed class MainForm : Form
             _spectrum.Frame = frame;
             _spectrum.Invalidate();
             _detectionText.Text = _engine.Detection;
+            _volumePanel.UpdateStatus();
             _queueText.Text = $"Queued audio: {_engine.QueuedAudioMs:F0} ms";
             _captureText.Text = $"Capture batch: {_engine.CaptureBatchMs:F0} ms";
             _meter.Value = frame is null ? 0 : Math.Clamp((int)(Math.Pow(10, frame.PeakDb / 20) * 1000), 0, 1000);
-            _analysisText.Text = frame is null ? "Analyzer idle — playback unchanged" : !frame.Supported ? "Analysis unavailable for this format; playback continues" : $"Peak {frame.PeakDb:F1} | RMS {frame.RmsDb:F1} dBFS | Dominant {frame.DominantHz:F0} Hz";
+            _analysisText.Text = frame is null ? "Input analyzer idle" : !frame.Supported ? "Analysis unavailable for this format; playback continues" : $"Input peak {frame.PeakDb:F1} | RMS {frame.RmsDb:F1} dBFS | Dominant {frame.DominantHz:F0} Hz";
         };
         _analysisTimer.Start();
         _engine.Faulted += ReportFault;
         FormClosing += (_, _) =>
         {
             _review.FlushPendingEdits();
+            _volumePanel.Flush();
             SaveDeviceSelections();
             _analysisTimer.Stop();
             _analysisTimer.Dispose();

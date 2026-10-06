@@ -14,6 +14,12 @@ public sealed class AudioEngine : IDisposable
     private bool _outputStarted;
     private LiveAnalyzer? _analyzer;
     private AnalysisTap? _tap;
+    private LiveCategoryRouter? _router;
+    private LiveCategoryVolumes? _volumes;
+    public VolumeControls VolumeControls { get; } = new();
+    public string RoutingStatus => (_router?.Status ?? "Start playback for live routing") +
+        (_volumes is { Supported: false } ? " • volume control unavailable for this format" : "") +
+        (_volumes is { ClippedSamples: > 0 } v ? $" • clipped samples: {v.ClippedSamples} (lower volume)" : "");
     public double QueuedAudioMs => _buffer?.BufferedDuration.TotalMilliseconds ?? 0;
     private double _captureBatchMs;
     public double CaptureBatchMs => Volatile.Read(ref _captureBatchMs);
@@ -33,12 +39,13 @@ public sealed class AudioEngine : IDisposable
     public EventLibrary SavedEvents { get; }
     public AudioEngine(EventLibrary? savedEvents = null) => SavedEvents = savedEvents ?? new EventLibrary(categorizer:
         new EventCategorizer(Path.Combine(AppContext.BaseDirectory, "Models", "spike-profiles.json")).Categorize);
-    public string AudioDetails => $"GamerSense v0.4.18\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
+    public string AudioDetails => $"GamerSense v0.4.19\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         (ActiveTiming.LowEnginePeriod ? "Low-period mode: Windows chooses capacity from its supported period; 30 ms request applies only to fallback.\n" : "") +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
         $"Queued audio now: {QueuedAudioMs:F1} ms\nLast capture batch: {CaptureBatchMs:F1} ms\n" +
         $"Capture route: {_captureRoute}\nCapture format: {_captureFormat}\nOutput device mix format: {_outputMixFormat}\nCaptured-sound suggestions enabled: {DetectionEnabled}\n" +
+        $"Category section routing: {VolumeControls.Levels.Enabled}\n{RoutingStatus}\n" +
         "Queue/batch values are partial diagnostics, not total end-to-end latency.\n\n" +
         _endpointTiming + "\n" + (_leanOutput?.Report() ?? _leanReport) + "\n" + (_playbackMeter?.Report() ?? "No playback supply readings yet.\n") +
         "\nPLAYBACK SESSION SUMMARY (retained after Stop)\n" + (_diagnostics?.Report() ?? "No playback session recorded yet.");
@@ -87,7 +94,11 @@ public sealed class AudioEngine : IDisposable
             DiscardOnBufferOverflow = true,
             ReadFully = false
         };
-        _playbackMeter = new MeteredPlaybackProvider(_buffer);
+        _router = new LiveCategoryRouter(_capture.WaveFormat, VolumeControls,
+            Path.Combine(AppContext.BaseDirectory, "Models", "spike-profiles.json"));
+        var router = _router;
+        _volumes = new LiveCategoryVolumes(_capture.WaveFormat, VolumeControls, () => router.CurrentCategory);
+        _playbackMeter = new MeteredPlaybackProvider(_buffer, _volumes.Process);
 
         _capture.DataAvailable += OnDataAvailable;
         _capture.RecordingStopped += OnRecordingStopped;
@@ -112,8 +123,8 @@ public sealed class AudioEngine : IDisposable
         var events = Events = new EventMonitor(_capture.WaveFormat);
         events.ClipReady += SavedEvents.Enqueue;
         events.ClipSkipped += SavedEvents.ReportSkipped;
-        _tap = new AnalysisTap((data, count) => { analyzer.Tap(data, count); events.Tap(data, count); },
-            () => { analyzer.Reset(); events.MarkGap(); });
+        _tap = new AnalysisTap((data, count) => { analyzer.Tap(data, count); events.Tap(data, count); router.Tap(data, count); },
+            () => { analyzer.Reset(); events.MarkGap(); router.Reset(); });
         _capture.StartRecording();
         _endpointTiming = EndpointTimingReport.Read(_capture, (object?)_leanOutput ?? _output!) +
             $"Capture scheduling: {(DirectCableCapture || (ActiveTiming != AudioTimingProfile.Stable && ResponsiveLoopbackCapture.UsesEventSync) ? "Windows audio events" : "Polling")}\n";
@@ -159,6 +170,7 @@ public sealed class AudioEngine : IDisposable
         IsRunning = false;
         Volatile.Write(ref _captureBatchMs, 0);
         Interlocked.Exchange(ref _tap, null)?.Dispose();
+        Interlocked.Exchange(ref _router, null)?.Dispose();
         Events?.CompletePending(true);
         _analyzer?.Dispose();
         _analyzer = null;

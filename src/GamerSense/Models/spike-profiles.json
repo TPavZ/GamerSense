@@ -42919,5 +42919,17 @@
   "hopSeconds": 0.25,
   "scoresAreProbabilities": false,
   "unknownThreshold": null,
-  "purpose": "Offline similarity ranking of positive weak labels; not source separation or production detection"
+  "purpose": "Offline similarity ranking of positive weak labels; not source separation or production detection",
+  "liveRoutingMaxDistance": {
+    "explosions": 0.4695121958139573,
+    "footsteps": 0.2608461556739432,
+    "ground_vehicles": 0.34495186618420526,
+    "air_vehicles": 0.19451049411967192
+  },
+  "liveRoutingPolicy": {
+    "minimumRelativeSecondChoiceGap": 0.3,
+    "consecutiveFreshEstimates": 2,
+    "staleMilliseconds": 300,
+    "scope": "Whole mixed section gain only; training-distance bounds are a heuristic, not calibrated unknown rejection or probabilities."
+  }
 }

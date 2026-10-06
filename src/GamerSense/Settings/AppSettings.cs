@@ -16,6 +16,7 @@ public sealed class AppSettings
     public bool AutoSaveEvents { get; set; } = true;
     public bool AutoCategorizeEvents { get; set; } = true;
     public string? ApprovedExportDirectory { get; set; }
+    public GamerSense.Audio.VolumeLevels Volumes { get; set; } = new();
 
     private static string SettingsDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

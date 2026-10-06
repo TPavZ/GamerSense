@@ -342,3 +342,4 @@ ApprovalExportChecks.Run();
 ReviewRangeChecks.Run();
 EventCategorizerChecks.Run();
 BulkDeleteChecks.Run();
+LiveVolumeChecks.Run();

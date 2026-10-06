@@ -36,6 +36,20 @@ class Program
   var exported=Directory.GetFiles(Path.Combine(root,"exports"),"*.wav").Single();using var reader=new WaveFileReader(exported);
   if(Math.Abs(reader.TotalTime.TotalSeconds-expected)>1.0/48000||library.List().Length!=0)throw new Exception("Approval UI exported the wrong range or kept pending source.");
   Console.WriteLine("PASS waveform drag, handle refinement, numeric synchronization, repeat toggle, native selected-range approval and review removal; screenshot saved.");
+  using var volumeForm=new Form {ClientSize=new Size(700,820),BackColor=form.BackColor,ForeColor=Color.White,Font=form.Font,Opacity=0,ShowInTaskbar=false};
+  var controls=new VolumeControls();VolumeLevels? persisted=null;
+  var volumes=new VolumePanel(controls,()=>"Estimated section: explosions / mortars",x=>persisted=x);
+  volumeForm.Controls.Add(volumes);volumeForm.Show();Application.DoEvents();
+  IEnumerable<Control> Descendants(Control c){foreach(Control child in c.Controls){yield return child;foreach(var nested in Descendants(child))yield return nested;}}
+  var sliders=Descendants(volumes).OfType<TrackBar>().ToArray();
+  if(sliders.Length!=5||sliders.Any(x=>x.Value!=100))throw new Exception("Volume UI neutral defaults/sliders incorrect.");
+  Descendants(volumes).OfType<CheckBox>().Single().Checked=true;
+  sliders.Single(x=>x.Name=="Explosions").Value=25;volumes.Flush();
+  if(controls.Levels.Explosions!=25||!controls.Levels.Enabled||persisted?.Explosions!=25||controls.Levels.Overall!=100)throw new Exception("Volume slider, enable or persistence UI failed.");
+  using(var image=new Bitmap(700,820)){volumes.DrawToBitmap(image,new Rectangle(0,0,700,820));image.Save(Path.Combine(root,"volume-controls.png"));}
+  Buttons(volumes).Single(b=>b.Text=="Reset all volumes to 100%").PerformClick();
+  if(sliders.Any(x=>x.Value!=100)||controls.Levels.Explosions!=100)throw new Exception("Volume reset failed.");
+  Console.WriteLine("PASS volume UI: five neutral sliders, live controls, explicit enable, saved values, reset; rendered screen saved.");
  }
 }
 

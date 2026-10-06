@@ -3,15 +3,17 @@ using NAudio.Wave;
 namespace GamerSense.Audio;
 
 // Same passthrough/zero-fill contract as BufferedWaveProvider.ReadFully=true,
-// with exact short-read accounting. No waiting, filtering, or sample changes.
+// with exact short-read accounting. Optional output gain never waits or queues.
 public sealed class MeteredPlaybackProvider : IWaveProvider
 {
     private readonly BufferedWaveProvider _source;
+    private readonly Action<byte[], int, int>? _transform;
     private long _reads, _shortReads, _missingBytes;
-    public MeteredPlaybackProvider(BufferedWaveProvider source)
+    public MeteredPlaybackProvider(BufferedWaveProvider source, Action<byte[], int, int>? transform = null)
     {
         if (source.ReadFully) throw new ArgumentException("Source must expose short reads.", nameof(source));
         _source = source;
+        _transform = transform;
     }
     public WaveFormat WaveFormat => _source.WaveFormat;
     public int AvailableFrames => _source.BufferedBytes / WaveFormat.BlockAlign;
@@ -29,6 +31,7 @@ public sealed class MeteredPlaybackProvider : IWaveProvider
             Interlocked.Increment(ref _shortReads);
             Interlocked.Add(ref _missingBytes, count - read);
         }
+        _transform?.Invoke(buffer, offset, read);
         return count;
     }
     public string Report() => $"PLAYBACK SUPPLY (retained after Stop)\nOutput reads: {ReadCount}\n" +
