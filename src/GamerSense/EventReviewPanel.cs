@@ -74,6 +74,7 @@ public sealed class EventReviewPanel : FlowLayoutPanel
         var savedButtons = Row();
         Button LibraryButton(string text, Action action) { var b = new Button { Text = text, AutoSize = true, ForeColor = Color.Black }; b.Click += (_, _) => Guard(action); savedButtons.Controls.Add(b); return b; }
         LibraryButton("Refresh saved clips", () => RefreshSaved(true));
+        LibraryButton("Delete all pending clips", DeleteAllPending);
         LibraryButton("Open WAV for review", OpenReviewWav);
         LibraryButton("Open temporary clips", () => { Directory.CreateDirectory(_library.DirectoryPath); System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_library.DirectoryPath) { UseShellExecute = true }); });
         LibraryButton("Choose export folder", ChooseExportFolder);
@@ -283,6 +284,27 @@ public sealed class EventReviewPanel : FlowLayoutPanel
         StopReplay(); _library.Delete(_savedItem); _savedItem = null; _clip = null; _draftDirty = false; _suggestionInfo.Text = ""; _rangeGeneration++;
         _waveform.Clip = null; _clipSpectrum.Frame = null; _waveform.Invalidate(); _clipSpectrum.Invalidate();
         RefreshSaved(true); _info.Text = "Saved clip deleted.";
+    }
+    private void DeleteAllPending()
+    {
+        var pending = _library.List(true).Where(item => !item.Approved).ToArray();
+        if (pending.Length == 0) { _info.Text = "There are no pending clips to delete."; return; }
+        string message = $"Delete all {pending.Length} pending clips and their labels?\n\nThis includes edited clips awaiting approval. This cannot be undone.\nApproved exports and imported WAV files will be kept.";
+        if (_running()) message += "\n\nLive capture is still running; new clips can appear after deletion.";
+        if (MessageBox.Show(this, message, "Delete all pending clips", MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+        bool selected = _savedItem is not null && pending.Any(item => item.Id == _savedItem.Id);
+        if (selected) StopReplay();
+        int removed;
+        try
+        {
+            removed = _library.DeletePending(pending);
+        }
+        finally
+        {
+            RefreshSaved(true);
+        }
+        _info.Text = $"Deleted {removed} pending clips. Approved exports were kept.";
     }
     private async void UpdateRange()
     {

@@ -1,4 +1,4 @@
-GamerSense v0.4.16 - live spike capture and tentative category review
+GamerSense v0.4.17 - live spike capture and tentative category review
 
 GET STARTED
 Stop the older app. Extract the entire App ZIP into a NEW folder and open
@@ -44,6 +44,9 @@ JSON to Documents\GamerSense\ApprovedClips (or your remembered export folder),
 then removes the temporary item. Approval means a useful training example.
 The label retains the original automatic suggestion and your correction.
 Delete clip removes unwanted pending samples after confirmation.
+Delete all pending clips confirms the count before removing the current
+pending WAV + label pairs, including edited clips. No is selected by default.
+Approved exports and captures arriving after the prompt opened are kept.
 Open WAV for review still lets you refine AC1 exports without changing the
 original files. Imported review creates a new export pair.
 

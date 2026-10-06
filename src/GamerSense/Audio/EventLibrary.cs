@@ -226,6 +226,18 @@ public sealed class EventLibrary : IDisposable
             _items?.Remove(item.Id); Interlocked.Increment(ref _revision);
         }
     }
+    public int DeletePending(IEnumerable<SavedEvent> selection)
+    {
+        lock (_gate)
+        {
+            var ids = selection.Select(item => item.Id).ToHashSet();
+            // Delete only the confirmed snapshot, and recheck approval status.
+            // Captures arriving after the confirmation opened stay in review.
+            var pending = List(true).Where(item => ids.Contains(item.Id) && !item.Approved).ToArray();
+            foreach (var item in pending) Delete(item);
+            return pending.Length;
+        }
+    }
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
