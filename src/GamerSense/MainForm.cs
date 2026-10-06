@@ -36,7 +36,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.4.9 — Event review";
+        Text = "GamerSense v0.4.10 — Event review";
         using (var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("GamerSense.AppIcon.ico"))
         {
             if (iconStream is not null) { _appIcon = new System.Drawing.Icon(iconStream); Icon = _appIcon; }
@@ -69,12 +69,13 @@ public sealed class MainForm : Form
         panel.Controls.Add(outputLabel);
         panel.Controls.Add(_output);
         panel.Controls.Add(new Label { Text = "PLAYBACK MODE — change while stopped", AutoSize = true });
-        _playbackMode.Items.AddRange(new object[] { "Stable playback", "Event-driven capture", "Minimum delay (test)", "Lean output (test)", "Low-period output (test)" });
-        _playbackMode.SelectedIndex = _settings.LowEnginePeriod ? 4 : _settings.LeanOutput ? 3 : _settings.FastestLatency ? 2 : _settings.LowerLatency ? 1 : 0;
+        _playbackMode.Items.AddRange(new object[] { "Stable playback", "Event-driven capture", "Minimum delay (test)", "Lean output (test)", "Low-period output (test)", "Direct refill (test)" });
+        _playbackMode.SelectedIndex = _settings.RealTimeRefill ? 5 : _settings.LowEnginePeriod ? 4 : _settings.LeanOutput ? 3 : _settings.FastestLatency ? 2 : _settings.LowerLatency ? 1 : 0;
         _engine.LowerLatency = _settings.LowerLatency;
         _engine.FastestLatency = _settings.FastestLatency;
         _engine.LeanOutput = _settings.LeanOutput;
         _engine.LowEnginePeriod = _settings.LowEnginePeriod;
+        _engine.RealTimeRefill = _settings.RealTimeRefill;
         panel.Controls.Add(_playbackMode);
         panel.Controls.Add(new Label { Text = "LIVE AUDIO", AutoSize = true });
         panel.Controls.Add(_meter);
@@ -123,10 +124,12 @@ public sealed class MainForm : Form
             _settings.FastestLatency = _playbackMode.SelectedIndex == 2;
             _settings.LeanOutput = _playbackMode.SelectedIndex == 3;
             _settings.LowEnginePeriod = _playbackMode.SelectedIndex == 4;
+            _settings.RealTimeRefill = _playbackMode.SelectedIndex == 5;
             _engine.LowerLatency = _settings.LowerLatency;
             _engine.FastestLatency = _settings.FastestLatency;
             _engine.LeanOutput = _settings.LeanOutput;
             _engine.LowEnginePeriod = _settings.LowEnginePeriod;
+            _engine.RealTimeRefill = _settings.RealTimeRefill;
             _settings.Save();
         };
         _analysisTimer.Tick += (_, _) =>

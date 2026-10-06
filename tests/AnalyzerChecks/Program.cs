@@ -192,6 +192,29 @@ try { LeanSharedOutput.FramesToWrite(480, 480, 481); throw new Exception("Invali
 catch (ArgumentOutOfRangeException) { }
 Console.WriteLine("PASS lean render scheduling: capacity/target/padding sweep, no overwrite, idempotent refill, invalid padding rejected");
 
+// Source pauses must not consume future zero-filled packets. Drain partial
+// batches at a render target smaller than capture, then verify ordered bytes.
+var directFormat = WaveFormat.CreateIeeeFloatWaveFormat(48000, 2);
+var directBuffer = new BufferedWaveProvider(directFormat) { ReadFully = false };
+var directMeter = new MeteredPlaybackProvider(directBuffer);
+var directInput = Enumerable.Range(0, 1440 * directFormat.BlockAlign).Select(n => (byte)(n % 251 + 1)).ToArray();
+var directResult = new List<byte>();
+for (int packet = 0; packet < 3; packet++)
+{
+    if (LeanSharedOutput.FramesToWrite(1440, 144, 0, directMeter.AvailableFrames) != 0)
+        throw new Exception("Direct refill wrote into a source pause");
+    directBuffer.AddSamples(directInput, packet * 480 * directFormat.BlockAlign, 480 * directFormat.BlockAlign);
+    while (directMeter.AvailableFrames > 0)
+    {
+        int frames = LeanSharedOutput.FramesToWrite(1440, 144, 0, directMeter.AvailableFrames);
+        var bytes = new byte[frames * directFormat.BlockAlign];
+        directMeter.Read(bytes, 0, bytes.Length); directResult.AddRange(bytes);
+    }
+}
+if (!directInput.SequenceEqual(directResult) || directMeter.ShortReadCount != 0 || directMeter.MissingAudioMs != 0)
+    throw new Exception("Direct refill introduced silence, lost samples, or reordered packets");
+Console.WriteLine("PASS direct refill: source gaps, partial packets, ordered byte-identical output, no future silence committed");
+
 if (LowPeriodSupport.SelectMinimum(4, 48, 448) != 48 || LowPeriodSupport.SelectMinimum(4, 49, 448) != 52)
     throw new Exception("Shared engine period alignment failed");
 foreach (var range in new[] { (0u, 48u, 448u), (4u, 49u, 50u), (4u, 0u, 100u), (4u, 100u, 48u) })
@@ -239,6 +262,10 @@ if (leanSettings.LowEnginePeriod || fastestSettings.LowEnginePeriod || eventSett
 var periodSettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>(
     System.Text.Json.JsonSerializer.Serialize(new GamerSense.Settings.AppSettings { LowEnginePeriod = true, OutputDeviceId = "saved-output" }))!;
 if (!periodSettings.LowEnginePeriod || periodSettings.OutputDeviceId != "saved-output") throw new Exception("Low-period mode memory failed");
+if (periodSettings.RealTimeRefill || leanSettings.RealTimeRefill || eventSettings.RealTimeRefill) throw new Exception("Existing modes changed to direct refill");
+var directSettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>(
+    System.Text.Json.JsonSerializer.Serialize(new GamerSense.Settings.AppSettings { RealTimeRefill = true, InputDeviceId = "saved-input" }))!;
+if (!directSettings.RealTimeRefill || directSettings.InputDeviceId != "saved-input") throw new Exception("Direct refill mode memory failed");
 Console.WriteLine("PASS stable defaults, shorter responsive profile, diagnostic labeling, legacy device-selection compatibility");
 
 var retained = new PlaybackDiagnostics(AudioTimingProfile.Stable, "input", "output", "float48k", "float48k");

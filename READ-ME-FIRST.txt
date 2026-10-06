@@ -1,22 +1,22 @@
-GamerSense v0.4.9 — low-period shared output test
+GamerSense v0.4.10 — direct refill test
 
 Close the old app, extract the ENTIRE app ZIP to a new folder, open GamerSense.exe.
-Select Low-period output (test) while stopped, then Start.
+Select Direct refill (test) while stopped, then Start.
 Compare delay and quality during 2-3 minutes of continuous audio.
 Stop and Copy audio details, including LEAN OUTPUT and PLAYBACK SUPPLY.
-The report shows supported/selected shared engine periods, or a fallback reason.
+The fill policy should say Available captured samples only.
 If it crackles or drops out, return to Lean output (test) while stopped.
-All existing modes, device/mode memory and the black/teal/gold icon are retained.
+All earlier modes, device/mode memory and the black/teal/gold icon are retained.
 
-This mode queries IAudioClient3 for supported shared engine periods and requests
-the shortest one below the default, using matching native float32 mono/stereo.
-On unsupported drivers/formats/initialization it uses Lean rendering and reports
-that fallback. Startup reserve remains 10 ms. Output capacity follows the
-selected period; the 30 ms allocation request applies only to fallback.
-Only available captured samples are queued in low-period rendering; waits for
-source are counted separately from silence fill. Neither is a definitive glitch
-count. No claim of zero or measured end-to-end latency is made.
-C6 driver support, audible latency and sound quality require the user's test.
+C6 reported a fixed 10 ms shared period. Direct refill keeps that output target
+and the 10 ms startup reserve, but queues only available captured frames rather
+than precommitting silence when capture runs short. New samples wake playback.
+No samples are discarded, reordered, filtered, or amplified.
+
+Refill attempts waiting for capture are counted separately. Windows can still
+emit silence if its queue empties; these are not measured audible glitch counts.
+The silence-fill metric excludes waits. Actual quality and total delay require
+listening tests; this update does not promise zero delay.
 
 SOURCE: Build using BUILD-DEBUG.bat, then launch the built GamerSense.exe.
 

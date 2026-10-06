@@ -21,13 +21,14 @@ public sealed class AudioEngine : IDisposable
     public bool FastestLatency { get; set; }
     public bool LeanOutput { get; set; }
     public bool LowEnginePeriod { get; set; }
+    public bool RealTimeRefill { get; set; }
     public AudioTimingProfile ActiveTiming { get; private set; } = AudioTimingProfile.Stable;
     private string _captureFormat = "Not started", _outputMixFormat = "Not started";
     private PlaybackDiagnostics? _diagnostics;
     private MeteredPlaybackProvider? _playbackMeter;
     private string _endpointTiming = "No Windows stream settings recorded yet.\n";
     public EventMonitor? Events { get; private set; }
-    public string AudioDetails => $"GamerSense v0.4.9\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
+    public string AudioDetails => $"GamerSense v0.4.10\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         (ActiveTiming.LowEnginePeriod ? "Low-period mode: Windows chooses capacity from its supported period; 30 ms request applies only to fallback.\n" : "") +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
@@ -55,7 +56,7 @@ public sealed class AudioEngine : IDisposable
         _endpointTiming = "Windows stream settings unavailable: session startup did not complete.\n";
         _playbackMeter = null;
         _leanReport = "";
-        ActiveTiming = LowEnginePeriod ? AudioTimingProfile.LowPeriod : LeanOutput ? AudioTimingProfile.Lean : FastestLatency ? AudioTimingProfile.Fastest : LowerLatency ? AudioTimingProfile.Responsive : AudioTimingProfile.Stable;
+        ActiveTiming = RealTimeRefill ? AudioTimingProfile.RealTime : LowEnginePeriod ? AudioTimingProfile.LowPeriod : LeanOutput ? AudioTimingProfile.Lean : FastestLatency ? AudioTimingProfile.Fastest : LowerLatency ? AudioTimingProfile.Responsive : AudioTimingProfile.Stable;
 
         _enumerator = new MMDeviceEnumerator();
         var captureEndpoint = _enumerator.GetDevice(captureDeviceId);
@@ -81,9 +82,9 @@ public sealed class AudioEngine : IDisposable
 
         // Shared-mode event sync is appropriate for the prototype and avoids
         // forcing the physical device into a format it does not natively use.
-        if (LeanOutput || LowEnginePeriod)
+        if (LeanOutput || LowEnginePeriod || RealTimeRefill)
         {
-            _leanOutput = new LeanSharedOutput(outputEndpoint, _playbackMeter, LowEnginePeriod);
+            _leanOutput = new LeanSharedOutput(outputEndpoint, _playbackMeter, ActiveTiming.LowEnginePeriod, ActiveTiming.RealTimeRefill);
             _leanOutput.Faulted += message => Faulted?.Invoke(message);
         }
         else

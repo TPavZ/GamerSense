@@ -21,13 +21,13 @@ public sealed class LeanSharedOutput : IDisposable
     private int _paddingMax;
     private int _mmcss;
     private readonly string _periodReport = "";
-    private readonly bool _lowActive;
+    private readonly bool _availableOnly;
     private long _supplyWaits;
     internal AudioClient Client => _client;
     public WaveFormat WaveFormat => _source.WaveFormat;
     public event Action<string>? Faulted;
 
-    public LeanSharedOutput(MMDevice endpoint, IWaveProvider source, bool lowPeriod = false)
+    public LeanSharedOutput(MMDevice endpoint, IWaveProvider source, bool lowPeriod = false, bool realTimeRefill = false)
     {
         _source = source;
         _client = endpoint.AudioClient;
@@ -35,7 +35,7 @@ public sealed class LeanSharedOutput : IDisposable
         {
             int selectedFrames = 0;
             bool lowActive = lowPeriod && LowPeriodSupport.TryInitialize(_client, source.WaveFormat, out selectedFrames, out _periodReport);
-            _lowActive = lowActive;
+            _availableOnly = lowActive || realTimeRefill;
             if (!lowActive)
             {
                 if (lowPeriod) { _client.Dispose(); _client = endpoint.AudioClient; }
@@ -78,9 +78,9 @@ public sealed class LeanSharedOutput : IDisposable
         // A short render period can split a 10 ms capture batch. Queue only real
         // available frames, and wake again on source arrival rather than commit
         // future silence when the rest of a batch can arrive before consumption.
-        int available = _lowActive && _source is MeteredPlaybackProvider meter ? meter.AvailableFrames : int.MaxValue;
+        int available = _availableOnly && _source is MeteredPlaybackProvider meter ? meter.AvailableFrames : int.MaxValue;
         int frames = FramesToWrite(_capacity, _target, padding, available);
-        if (_lowActive && frames == 0 && available == 0 && padding < _target) Interlocked.Increment(ref _supplyWaits);
+        if (_availableOnly && frames == 0 && available == 0 && padding < _target) Interlocked.Increment(ref _supplyWaits);
         if (frames == 0) return;
         int count = frames * _source.WaveFormat.BlockAlign;
         int read = _source.Read(_bytes, 0, count);
@@ -128,7 +128,8 @@ public sealed class LeanSharedOutput : IDisposable
             $"Output queued-audio target: {_target * scale:F1} ms (capacity {_capacity * scale:F1} ms)\n" +
             $"Output writes: {writes}\nOutput padding avg / max before writes: {(writes == 0 ? 0 : Interlocked.Read(ref _paddingSum) * scale / writes):F1} / {Volatile.Read(ref _paddingMax) * scale:F1} ms\n" +
             $"Output multimedia scheduling enabled: {Volatile.Read(ref _mmcss) == 1}\n" +
-            (_lowActive ? $"Refill attempts waiting for captured samples: {Interlocked.Read(ref _supplyWaits)} (includes source pauses; not audible glitch count)\nLow-period renderer queues available samples only; silence-fill counts exclude these waits.\n" : "") +
+            $"Output fill policy: {(_availableOnly ? "Available captured samples only" : "Silence padding on source shortfall")}\n" +
+            (_availableOnly ? $"Refill attempts waiting for captured samples: {Interlocked.Read(ref _supplyWaits)} (includes source pauses; not audible glitch count)\nSilence-fill counts exclude these waits; Windows can still emit silence if its queue runs empty.\n" : "") +
             "Padding samples cover writes only and are not total end-to-end latency.\n";
     }
     public void Dispose()

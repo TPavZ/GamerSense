@@ -434,3 +434,24 @@ possible. Refill attempts waiting for capture are reported separately; ordinary
 silence-fill counters do not cover those waits. Source pauses also cause waits.
 This avoids committing premature silence between differently sized capture and
 render batches. The original Lean mode and fallback retain their former behavior.
+
+## v0.4.10 — direct refill test
+
+C6 reports a fixed 10 ms shared period, so low-period initialization cannot
+shorten it. Direct refill (test) uses the existing shared Lean renderer and
+10 ms startup reserve, but queues available captured frames only, regardless
+of IAudioClient3 support. It avoids precommitting silence on a source shortfall
+that can defer newly arriving real audio. Source arrivals trigger immediate
+refill where there is free target space. Samples remain in order and unmodified;
+no stale-audio discard, DSP, or extra buffering is introduced.
+
+The new report labels the fill policy and counts refill attempts waiting for
+captured data. Windows may still output silence if its queue empties; these
+counts are not an audible glitch measurement. Supply meter silence-fill counts
+do not include these waits. All old modes, including Lean and low-period
+fallback behavior, remain selectable and unchanged.
+
+Validation simulates source gaps and smaller output packets, ensuring no future
+silence commitment and byte-identical ordered samples. Previous checks cover
+scheduling bounds, mode migration, analysis, and event review. C6 listening
+quality and total latency still require testing. This is not a zero-delay claim.

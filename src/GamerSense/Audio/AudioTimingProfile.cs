@@ -3,7 +3,7 @@ using NAudio.Wave;
 
 namespace GamerSense.Audio;
 
-public sealed record AudioTimingProfile(int CaptureBufferMs, int OutputLatencyMs, int BufferCapacityMs, int PrebufferMs, bool LowEnginePeriod = false)
+public sealed record AudioTimingProfile(int CaptureBufferMs, int OutputLatencyMs, int BufferCapacityMs, int PrebufferMs, bool LowEnginePeriod = false, bool RealTimeRefill = false)
 {
     public static AudioTimingProfile Stable { get; } = new(100, 30, 200, 40);
     // Shorten capture delivery without reducing the clean Stable output timing.
@@ -12,7 +12,8 @@ public sealed record AudioTimingProfile(int CaptureBufferMs, int OutputLatencyMs
     public static AudioTimingProfile Fastest { get; } = new(20, 10, 80, 20);
     public static AudioTimingProfile Lean { get; } = new(50, 30, 80, 10);
     public static AudioTimingProfile LowPeriod { get; } = new(50, 30, 80, 10, true);
-    public string DisplayName => this == Stable ? "Stable" : this == LowPeriod ? "Low-period output" : this == Lean ? "Lean output" : this == Fastest ? "Minimum delay" : "Event-driven capture";
+    public static AudioTimingProfile RealTime { get; } = new(50, 30, 80, 10, false, true);
+    public string DisplayName => this == Stable ? "Stable" : this == RealTime ? "Direct refill" : this == LowPeriod ? "Low-period output" : this == Lean ? "Lean output" : this == Fastest ? "Minimum delay" : "Event-driven capture";
 }
 
 // NAudio's standard loopback constructor does not expose the capture-buffer size.
