@@ -26,6 +26,7 @@ public sealed class MainForm : Form
     private readonly Button _copyAudioDetails = new() { Text = "Copy audio details", Width = 170 };
     private readonly EventReviewPanel _review;
     private bool _hotkeyRegistered;
+    private System.Drawing.Icon? _appIcon;
     [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
     [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
     private static extern bool RegisterHotKey(IntPtr window, int id, uint modifiers, uint key);
@@ -35,7 +36,11 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.4.0 — Event review";
+        Text = "GamerSense v0.4.1 — Event review";
+        using (var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("GamerSense.AppIcon.ico"))
+        {
+            if (iconStream is not null) { _appIcon = new System.Drawing.Icon(iconStream); Icon = _appIcon; }
+        }
         Width = 720;
         Height = 860;
         StartPosition = FormStartPosition.CenterScreen;
@@ -148,6 +153,11 @@ public sealed class MainForm : Form
     {
         if (message.Msg == 0x0312 && message.WParam.ToInt32() == 4108) { _review?.MarkLive(); return; }
         base.WndProc(ref message);
+    }
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) { _appIcon?.Dispose(); _appIcon = null; }
+        base.Dispose(disposing);
     }
 
     private void LoadDevices()

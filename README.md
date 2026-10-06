@@ -305,3 +305,11 @@ VehiclesNonGunner audio). Open audio sample starts in that folder. Automated
 checks decoded the demo, detected activity markers, checked capture duration,
 and extracted context successfully. This does not verify the demo's sound-type
 labels; those remain manual review tasks.
+
+## v0.4.1 — GamerSense app icon
+
+Added a teal headset/waveform icon with amber accents, including Windows icon
+sizes from 16 to 256 px. The ICO is embedded as the executable ApplicationIcon
+and as the main form's icon. It travels with builds and requires no separate
+icon-file lookup at runtime. Debug and Release builds passed with 0 warnings /
+0 errors. Audio and event-review behavior are unchanged from v0.4.0.
