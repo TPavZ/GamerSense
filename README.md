@@ -340,3 +340,14 @@ The diagnostics borrow NAudio 2.2.1 private clients using reflection; failure
 reports unavailable without changing playback. Reads happen once at startup,
 not on the capture callback. Both playback profiles are unchanged from v0.4.4.
 Hardware testing is still needed to locate the reported half-second delay.
+
+## v0.4.6 — event-driven capture test
+
+The test mode now reads loopback audio on Windows audio events instead of
+polling halfway through each capture buffer. Windows 10 build 15063 or newer
+supports this. Older systems use polling compatibility. Copy audio details
+retains the capture scheduling method. Requested buffer capacities remain
+50/30/150 ms and startup prebuffer stays 40 ms. Stable is unchanged.
+No sound processing is introduced. Delay and crackling must be checked on the
+user's devices; this is not a confirmed end-to-end latency fix.
+Reference: https://learn.microsoft.com/windows/win32/coreaudio/loopback-recording

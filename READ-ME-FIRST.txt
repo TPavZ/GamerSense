@@ -1,31 +1,19 @@
-GamerSense v0.4.5 — event monitoring and review
+GamerSense v0.4.6 — event-driven capture test
 
-Build with BUILD-DEBUG.bat, then launch the built GamerSense.exe.
-Use Stable playback. The Event review tab keeps the latest 60 seconds and
-marks loud threshold crossings and sudden level rises. You can also mark by
-button, F8 while focused, or Ctrl+Alt+F8 globally if registration succeeds.
+APP TEST: Close the old app. Extract the entire app ZIP to a new folder.
+While stopped select Event-driven capture (test), then Start.
+Compare delay and quality. After 30 seconds Stop and Copy audio details.
+Capture scheduling should report Windows audio events on modern Windows.
+If audio crackles or cuts out, return to Stable playback while stopped.
+Stable is unchanged. This is a timing test, not a confirmed latency fix.
 
-Offline demo: while stopped, Event review > Open audio sample > demo-vehicles.wav.
-On Playback first select your true output for review playback.
+SOURCE BUILD: Use BUILD-DEBUG.bat, then launch the built GamerSense.exe.
+The app retains device selections and includes the black/teal/gold icon.
 
-Select a marker, adjust seconds before/after, then Load / refresh event clip.
-Stop live playback before Replay range. Adjust start/end seconds to focus the
-waveform and spectrum. Select a sound label, Keep/Reduce/Unsure, and notes.
-Save WAV + label writes the audio and a JSON sidecar in your chosen folder.
-
-No suppression is applied yet. These preferences supply examples for developing
-controls to reduce loud/distracting audio while preserving useful combat cues.
-Old audio expires after 60 seconds. Frozen clips survive until replaced; Stop
-retains the current session. Save before closing or starting a new session.
-
-BUILD-DEBUG.bat, remembered device IDs, Stable timing, and prior diagnostics
-are preserved. The half-second audible delay remains unresolved.
-Developer checks: dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj
-See README.md for format support, recorder gaps, and validation limitations.
-
-
-
-
-Delay test: while stopped select Reduced delay (test), then Start. Compare delay and quality; copy audio details afterward. Stable mode remains available.
-
-v0.4.5 diagnostic test: Start audio for 20-30 seconds, Stop, then Copy audio details. Include the new WINDOWS STREAM SETTINGS section. Playback timing is unchanged.
+EVENT REVIEW: The latest 60 seconds are retained for reviewing spikes.
+Mark with the button or Ctrl+Alt+F8 (if available), or F8 within this app.
+Select a marker, then Load / refresh event clip. Stop before Replay range.
+Choose a label and Keep/Reduce/Unsure, then Save WAV + label.
+Save both audio and JSON files together. Sound suppression is not implemented.
+Offline demo: Event review > Open audio sample > demo-vehicles.wav.
+Select a true output on Playback first for review playback.

@@ -12,11 +12,14 @@ public sealed record AudioTimingProfile(int CaptureBufferMs, int OutputLatencyMs
 }
 
 // NAudio's standard loopback constructor does not expose the capture-buffer size.
-// Keep shared-mode loopback flags, but request a shorter polling buffer in test mode.
+// Modern Windows supports event-driven loopback: read when Windows signals that
+// audio is ready, instead of waiting half the allocated buffer between reads.
+// Older Windows retains polling compatibility; Stable still uses NAudio's stock path.
 public sealed class ResponsiveLoopbackCapture : WasapiCapture
 {
+    public static bool UsesEventSync => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 15063);
     public ResponsiveLoopbackCapture(MMDevice endpoint, int bufferMs)
-        : base(endpoint, false, bufferMs) { }
+        : base(endpoint, UsesEventSync, bufferMs) { }
     protected override AudioClientStreamFlags GetAudioClientStreamFlags()
         => AudioClientStreamFlags.Loopback | base.GetAudioClientStreamFlags();
 }

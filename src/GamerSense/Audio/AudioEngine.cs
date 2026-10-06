@@ -21,7 +21,7 @@ public sealed class AudioEngine : IDisposable
     private PlaybackDiagnostics? _diagnostics;
     private string _endpointTiming = "No Windows stream settings recorded yet.\n";
     public EventMonitor? Events { get; private set; }
-    public string AudioDetails => $"GamerSense v0.4.5\nRunning now: {IsRunning}\nMode: {(ActiveTiming == AudioTimingProfile.Responsive ? "Reduced delay" : "Stable")}\n" +
+    public string AudioDetails => $"GamerSense v0.4.6\nRunning now: {IsRunning}\nMode: {(ActiveTiming == AudioTimingProfile.Responsive ? "Event-driven capture" : "Stable")}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
         $"Queued audio now: {QueuedAudioMs:F1} ms\nLast capture batch: {CaptureBatchMs:F1} ms\n" +
@@ -83,7 +83,8 @@ public sealed class AudioEngine : IDisposable
         _tap = new AnalysisTap((data, count) => { analyzer.Tap(data, count); detector.Tap(data, count); events.Tap(data, count); },
             () => { analyzer.Reset(); detector.Reset(); events.MarkGap(); });
         _capture.StartRecording();
-        _endpointTiming = EndpointTimingReport.Read(_capture, _output);
+        _endpointTiming = EndpointTimingReport.Read(_capture, _output) +
+            $"Capture scheduling: {(LowerLatency && ResponsiveLoopbackCapture.UsesEventSync ? "Windows audio events" : "Polling")}\n";
         IsRunning = true;
     }
 
