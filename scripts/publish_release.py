@@ -3,9 +3,14 @@ from pathlib import Path,PurePosixPath
 import argparse,hashlib,json,os,re,shutil,subprocess,time,urllib.request,urllib.error,urllib.parse,zipfile
 
 REPOSITORY='TPavZ/GamerSense'
+GIT=shutil.which('git') or os.environ.get('GAMERSENSE_GIT')
+if not GIT:
+    bundled=Path.home()/'.cache/codex-runtimes/codex-primary-runtime/dependencies/native/git/cmd/git.exe'
+    if bundled.is_file():GIT=str(bundled)
+if GIT:os.environ['PATH']=str(Path(GIT).parent)+os.pathsep+os.environ.get('PATH','')
 def sha256(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def git_command(repo,*args,check=True):
-    result=subprocess.run(['git','-c','safe.directory='+str(repo),'-C',str(repo),*args],text=True,capture_output=True)
+    result=subprocess.run([GIT,'-c','safe.directory='+str(repo),'-C',str(repo),*args],text=True,capture_output=True)
     if check and result.returncode:raise RuntimeError(result.stderr.strip())
     return result
 def credential():
@@ -15,7 +20,7 @@ def credential():
         result=subprocess.run(['gh','auth','token','--hostname','github.com'],text=True,capture_output=True)
         if result.returncode==0 and result.stdout.strip():return result.stdout.strip()
     env=os.environ.copy();env.update(GIT_TERMINAL_PROMPT='0',GCM_INTERACTIVE='never')
-    result=subprocess.run(['git','credential','fill'],input='protocol=https\nhost=github.com\n\n',text=True,capture_output=True,env=env)
+    result=subprocess.run([GIT,'credential','fill'],input='protocol=https\nhost=github.com\n\n',text=True,capture_output=True,env=env)
     fields=dict(line.split('=',1) for line in result.stdout.splitlines() if '=' in line) if result.returncode==0 else {}
     if not fields.get('password'):raise RuntimeError('A local GitHub sign-in is required. Use gh auth login or git credential-manager github login --device. Never paste a token into chat.')
     return fields['password']
@@ -81,7 +86,7 @@ def main():
     parser.add_argument('--version');parser.add_argument('--assets-dir',type=Path)
     parser.add_argument('--check-only',action='store_true');parser.add_argument('--result',type=Path)
     args=parser.parse_args();repo=args.repo.resolve()
-    if not shutil.which('git'):raise RuntimeError('Git must be on PATH')
+    if not GIT:raise RuntimeError('Install Git or set GAMERSENSE_GIT to its executable path')
     remote=git_command(repo,'remote','get-url','origin').stdout.strip().lower().removesuffix('.git')
     if remote!='https://github.com/tpavz/gamersense':raise RuntimeError('This publisher is restricted to TPavZ/GamerSense')
     if bool(args.manifest)==bool(args.version):raise ValueError('Use either --manifest or --version, not both')
