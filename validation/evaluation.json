@@ -1,0 +1,118 @@
+{
+  "evaluation": "leave-one-recording-out; preprocessing fitted within each fold",
+  "metrics": {
+    "air vehicle": {
+      "recordings": 4,
+      "windows": 159,
+      "precision": 0.505,
+      "recall": 0.906,
+      "f1": 0.649
+    },
+    "ambience": {
+      "recordings": 2,
+      "windows": 55,
+      "precision": 0.021,
+      "recall": 0.018,
+      "f1": 0.019
+    },
+    "explosion": {
+      "recordings": 4,
+      "windows": 175,
+      "precision": 0.31,
+      "recall": 0.594,
+      "f1": 0.408
+    },
+    "ground vehicle": {
+      "recordings": 2,
+      "windows": 47,
+      "precision": 0.5,
+      "recall": 0.617,
+      "f1": 0.552
+    },
+    "gunfire": {
+      "recordings": 10,
+      "windows": 713,
+      "precision": 0.751,
+      "recall": 0.384,
+      "f1": 0.508
+    },
+    "movement": {
+      "recordings": 3,
+      "windows": 176,
+      "precision": 0.37,
+      "recall": 0.307,
+      "f1": 0.335
+    },
+    "reload": {
+      "recordings": 6,
+      "windows": 97,
+      "precision": 0.341,
+      "recall": 0.649,
+      "f1": 0.447
+    }
+  },
+  "macroF1": 0.417,
+  "excludedCategories": {
+    "chambering": 1,
+    "horn/alarm": 1
+  },
+  "eligibleWindows": 1442,
+  "excludedWindows": {
+    "unlabeled_partial_or_overlapping": 801
+  },
+  "confusion": {
+    "air vehicle": {
+      "air vehicle": 144,
+      "gunfire": 2,
+      "reload": 1,
+      "ground vehicle": 11,
+      "movement": 1
+    },
+    "ambience": {
+      "movement": 8,
+      "explosion": 29,
+      "ambience": 1,
+      "air vehicle": 5,
+      "ground vehicle": 2,
+      "reload": 9,
+      "gunfire": 1
+    },
+    "explosion": {
+      "gunfire": 5,
+      "movement": 8,
+      "ground vehicle": 7,
+      "explosion": 104,
+      "ambience": 22,
+      "reload": 29
+    },
+    "ground vehicle": {
+      "gunfire": 6,
+      "ground vehicle": 29,
+      "air vehicle": 11,
+      "explosion": 1
+    },
+    "gunfire": {
+      "gunfire": 274,
+      "ambience": 21,
+      "explosion": 149,
+      "reload": 79,
+      "movement": 68,
+      "air vehicle": 122
+    },
+    "movement": {
+      "ground vehicle": 9,
+      "air vehicle": 3,
+      "gunfire": 69,
+      "movement": 54,
+      "reload": 4,
+      "explosion": 33,
+      "ambience": 4
+    },
+    "reload": {
+      "explosion": 19,
+      "reload": 63,
+      "gunfire": 8,
+      "movement": 7
+    }
+  }
+}

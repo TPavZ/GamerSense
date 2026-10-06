@@ -18,12 +18,14 @@ public sealed class MainForm : Form
     private readonly SpectrumView _spectrum = new();
     private readonly Label _analysisText = new() { AutoSize = true, Text = "Analyzer ready — playback unchanged" };
     private readonly System.Windows.Forms.Timer _analysisTimer = new() { Interval = 50 };
+    private readonly CheckBox _soundMatching = new() { Text = "Experimental Wardogs sound matching", Checked = true, AutoSize = true };
+    private readonly Label _detectionText = new() { AutoSize = true, Text = "Sound matching idle" };
 
     public MainForm()
     {
-        Text = "GamerSense v0.2.0";
+        Text = "GamerSense v0.3.0 — Experimental";
         Width = 540;
-        Height = 650;
+        Height = 760;
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(18, 18, 22);
         ForeColor = Color.White;
@@ -54,6 +56,9 @@ public sealed class MainForm : Form
         panel.Controls.Add(new Label { Text = "LIVE SPECTRUM • Hz / dBFS", AutoSize = true });
         panel.Controls.Add(_spectrum);
         panel.Controls.Add(_analysisText);
+        panel.Controls.Add(_soundMatching);
+        panel.Controls.Add(_detectionText);
+        panel.Controls.Add(new Label { Text = "Closest learned pattern; may be wrong. Audio unchanged.", AutoSize = true });
 
         var buttons = new FlowLayoutPanel { AutoSize = true };
         buttons.Controls.Add(_start);
@@ -66,11 +71,13 @@ public sealed class MainForm : Form
         _start.Click += (_, _) => ToggleEngine();
         _input.SelectedIndexChanged += (_, _) => SaveDeviceSelections();
         _output.SelectedIndexChanged += (_, _) => SaveDeviceSelections();
+        _soundMatching.CheckedChanged += (_, _) => _engine.DetectionEnabled = _soundMatching.Checked;
         _analysisTimer.Tick += (_, _) =>
         {
             var frame = _engine.Analysis;
             _spectrum.Frame = frame;
             _spectrum.Invalidate();
+            _detectionText.Text = _engine.Detection;
             _meter.Value = frame is null ? 0 : Math.Clamp((int)(Math.Pow(10, frame.PeakDb / 20) * 1000), 0, 1000);
             _analysisText.Text = frame is null ? "Analyzer idle — playback unchanged" : !frame.Supported ? "Analysis unavailable for this format; playback continues" : $"Peak {frame.PeakDb:F1} | RMS {frame.RmsDb:F1} dBFS | Dominant {frame.DominantHz:F0} Hz";
         };

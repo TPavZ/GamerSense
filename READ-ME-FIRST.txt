@@ -1,0 +1,15 @@
+Run BUILD-DEBUG.bat, then launch:
+src\GamerSense\bin\Debug\net9.0-windows\GamerSense.exe
+
+Use the same audio devices as before. The new experimental Wardogs checkbox
+shows the closest learned pattern. It may be wrong, especially for mixed sounds.
+Playback, buffer settings, and saved device selections are preserved.
+The matching model needs 48 kHz stereo input; other formats still allow playback.
+
+Optional developer checks:
+dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj
+
+To retrain: extract the Wardogs sample review pack, place reviewed-labels.json
+from validation into Wardogs-samples, and run with Python plus NumPy:
+python validation/train_live_model.py Wardogs-samples Wardogs-model-results
+The feature recipe must remain synchronized with WardogsModel.cs.

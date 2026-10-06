@@ -12,6 +12,14 @@ public sealed class AudioEngine : IDisposable
     private bool _outputStarted;
     private LiveAnalyzer? _analyzer;
     public AnalysisFrame? Analysis => _analyzer?.Latest;
+    private ExperimentalDetector? _detector;
+    private bool _detectionEnabled = true;
+    public string Detection => _detector?.Latest ?? "Sound matching idle";
+    public bool DetectionEnabled
+    {
+        get => _detectionEnabled;
+        set { _detectionEnabled = value; if (_detector is not null) _detector.Enabled = value; }
+    }
 
     // Stability-first values for the prototype. Once passthrough is clean we can
     // measure and tune these downward instead of guessing at ultra-low latency.
@@ -49,6 +57,8 @@ public sealed class AudioEngine : IDisposable
 
         _outputStarted = false;
         _analyzer = new LiveAnalyzer(_capture.WaveFormat);
+        _detector = new ExperimentalDetector(_capture.WaveFormat,
+            Path.Combine(AppContext.BaseDirectory, "Models", "wardogs-model.json")) { Enabled = _detectionEnabled };
         _capture.StartRecording();
         IsRunning = true;
     }
@@ -72,6 +82,7 @@ public sealed class AudioEngine : IDisposable
                 _outputStarted = true;
             }
             _analyzer?.Tap(e.Buffer, e.BytesRecorded);
+            _detector?.Tap(e.Buffer, e.BytesRecorded);
         }
         catch (Exception ex)
         {
@@ -88,6 +99,8 @@ public sealed class AudioEngine : IDisposable
     public void Stop()
     {
         IsRunning = false;
+        _detector?.Dispose();
+        _detector = null;
         _analyzer?.Dispose();
         _analyzer = null;
         _outputStarted = false;

@@ -79,3 +79,43 @@ On your system:
 Physical WASAPI routing, listening quality, and persisted device selections
 require testing with your devices; these were not exercised in this workspace.
 The ZIP contains source only; old bin/obj build artifacts are excluded.
+
+## v0.3.0 — experimental Wardogs sound matching
+
+The new checkbox enables a closest-pattern readout using the reviewed Wardogs
+samples. Categories: movement, gunfire, reload, explosion, ground vehicle,
+air vehicle, ambience. This is an experimental baseline, not reliable sound
+recognition: it may guess incorrectly, especially in mixed gameplay. No
+confidence percentage is shown because it has not been calibrated.
+Own and nearby movement are combined. Horns and chambering are excluded from
+the model because there is only one independently labeled recording each.
+
+The matcher needs a 48 kHz stereo capture input. If you see a format message,
+you can set your virtual playback device to a 48 kHz stereo format in Windows
+Sound settings. Spectrum and playback still work at other supported formats.
+An absent or incompatible model disables matching without disabling playback.
+Keep the Models folder beside GamerSense.exe when copying the built app.
+
+The readout uses a half-second sample window, updated about four times per
+second, on a background timer. Capture callbacks only copy/decode into a fixed
+ring and never wait for its lock. Contention resets the matching window.
+Very quiet audio (below -60 dBFS RMS) shows no match; that is a simple quiet
+gate, not a validated unknown-sound detector. Normal-volume unknown sounds
+can still receive an incorrect known-category match.
+
+The live feature recipe (box3-spectrum-v1) was retrained and evaluated with
+whole-recording holdouts. It differs from the initial offline model and is
+bundled in src/GamerSense/Models/wardogs-model.json. Metrics are included in
+validation/evaluation.json; macro F1 remains about 41.7% on selected weakly
+labeled windows. This is not live gameplay accuracy or a calibrated confidence.
+
+Validated Debug and Release compilation, original analyzer format checks,
+Python/C# parity across all 47 features on five actual clip windows, matching
+prediction parity, immutable capture bytes, disable, silence, stale display,
+missing model, and unsupported rate. Real-device playback needs user testing.
+
+Build with BUILD-DEBUG.bat. Launch the new GamerSense.exe, start your usual
+routing, and compare the closest-pattern readout with what you hear. Try the
+matching checkbox on/off and confirm clean audio, the spectrum, and remembered
+device selections. For repeatable feedback, note the actual sound, displayed
+category, and whether multiple sounds overlapped.

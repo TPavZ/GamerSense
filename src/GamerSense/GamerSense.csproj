@@ -7,9 +7,10 @@
     <Nullable>enable</Nullable>
     <AssemblyName>GamerSense</AssemblyName>
     <RootNamespace>GamerSense</RootNamespace>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="Models\wardogs-model.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <PackageReference Include="NAudio" Version="2.2.1" />
   </ItemGroup>
 </Project>

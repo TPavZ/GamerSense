@@ -33,3 +33,56 @@ await Check(new WaveFormatExtensible(48000, 32, 2), BitConverter.GetBytes, "exte
 using var unsupported = new LiveAnalyzer(new WaveFormat(48000, 8, 2));
 if (unsupported.Latest.Supported) throw new Exception("Unsupported format incorrectly accepted");
 Console.WriteLine("PASS unsupported format");
+
+var modelPath = Path.Combine(AppContext.BaseDirectory, "Models", "wardogs-model.json");
+var model = WardogsModel.Load(modelPath);
+using var expectations = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "expected.json")));
+foreach (var item in expectations.RootElement.EnumerateArray())
+{
+    string name = item.GetProperty("name").GetString()!;
+    var bytes = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", name + ".bin"));
+    var samples = new float[bytes.Length / 4]; Buffer.BlockCopy(bytes, 0, samples, 0, bytes.Length);
+    var features = WardogsModel.ExtractFeatures(samples);
+    var expected = item.GetProperty("features").EnumerateArray().Select(x => x.GetDouble()).ToArray();
+    double difference = features.Zip(expected).Max(pair => Math.Abs(pair.First - pair.Second));
+    if (difference > 1e-6) throw new Exception($"Feature mismatch {name}: {difference}");
+    if (model.Predict(samples) != item.GetProperty("prediction").GetString()) throw new Exception("Prediction mismatch");
+    Console.WriteLine($"PASS {name}: 47 feature values match Python; prediction matches; max difference {difference:E2}");
+}
+var floatFormat = WaveFormat.CreateIeeeFloatWaveFormat(48000, 2);
+using (var live = new ExperimentalDetector(floatFormat, modelPath))
+{
+    var bytes = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "g3.bin")); var original = bytes.ToArray();
+    await AwaitStatus(live, () => live.Latest.StartsWith("Closest pattern:"), bytes);
+    if (!live.Latest.StartsWith("Closest pattern:") || !bytes.SequenceEqual(original)) throw new Exception("Live tap failed");
+    live.Enabled = false; await AwaitStatus(live, () => live.Latest == "Sound matching off");
+    if (live.Latest != "Sound matching off") throw new Exception("Disable failed");
+    live.Enabled = true; await AwaitStatus(live, () => live.Latest == "Quiet audio — no match", new byte[bytes.Length]);
+    if (live.Latest != "Quiet audio — no match") throw new Exception("Silence failed: " + live.Latest);
+    await AwaitStatus(live, () => live.Latest == "No recent audio");
+    if (live.Latest != "No recent audio") throw new Exception("Stale reset failed");
+    Console.WriteLine("PASS live tap: immutable buffer, matching, disable, silence, stale reset");
+}
+using (var missing = new ExperimentalDetector(floatFormat, "missing-model.json"))
+{
+    await AwaitStatus(missing, () => missing.Latest.Contains("unavailable"));
+    if (!missing.Latest.Contains("unavailable")) throw new Exception("Missing model failed");
+}
+using (var differentRate = new ExperimentalDetector(WaveFormat.CreateIeeeFloatWaveFormat(44100, 2), modelPath))
+{
+    await AwaitStatus(differentRate, () => differentRate.Latest.Contains("48 kHz"));
+    if (!differentRate.Latest.Contains("48 kHz")) throw new Exception("Unsupported format failed");
+}
+Console.WriteLine("PASS missing model and unsupported sample rate");
+
+
+static async Task AwaitStatus(ExperimentalDetector detector, Func<bool> condition, byte[]? feed = null)
+{
+    long until = Environment.TickCount64 + 3000;
+    while (!condition() && Environment.TickCount64 < until)
+    {
+        if (feed is not null) detector.Tap(feed, feed.Length);
+        await Task.Delay(40);
+    }
+    if (!condition()) throw new Exception("Status timeout: " + detector.Latest);
+}
