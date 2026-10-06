@@ -46,6 +46,24 @@ def build_new_entry(repo,assets,version):
     if git_command(repo,'status','--porcelain').stdout.strip():raise RuntimeError('Commit or resolve local checkout changes before publishing.')
     tag='v'+version
     existing=git_command(repo,'tag','--list',tag).stdout.strip()
+    with zipfile.ZipFile(paths[0]) as app:
+        if app.testzip() is not None:raise ValueError('App ZIP failed its CRC check')
+        dependencies=json.loads(app.read('GamerSense/GamerSense.deps.json'))
+        if 'GamerSense/'+version not in dependencies.get('libraries',{}):raise ValueError('App ZIP version does not match requested release')
+    with zipfile.ZipFile(paths[1]) as source:
+        if source.testzip() is not None:raise ValueError('Source ZIP failed its CRC check')
+        if 'GamerSense/BUILD-DEBUG.bat' not in source.namelist():raise ValueError('Source ZIP must retain BUILD-DEBUG.bat')
+        project=source.read('GamerSense/src/GamerSense/GamerSense.csproj').decode('utf-8-sig')
+        if f'<Version>{version}</Version>' not in project:raise ValueError('Source project version does not match requested release')
+        if existing:
+            for entry in source.infolist():
+                parts=PurePosixPath(entry.filename).parts
+                if not parts or parts[0]!='GamerSense' or '..' in parts:raise ValueError('Unsafe source ZIP path')
+                name='/'.join(parts[1:])
+                if entry.is_dir() or any(p in ('bin','obj','.git') for p in parts) or name in ('AGENTS.md','.gitignore','README.md') or name.startswith(('scripts/','docs/')):continue
+                expected=subprocess.run([GIT,'hash-object','--stdin'],input=source.read(entry),capture_output=True,check=True).stdout.decode().strip()
+                actual=git_command(repo,'rev-parse',tag+':'+name,check=False)
+                if actual.returncode or actual.stdout.strip()!=expected:raise ValueError('Existing tag differs from Source ZIP: '+name)
     if not existing:
         files={}
         with zipfile.ZipFile(paths[1]) as z:
