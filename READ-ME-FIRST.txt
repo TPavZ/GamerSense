@@ -1,53 +1,68 @@
-GamerSense v0.4.14 - approve or delete
+GamerSense v0.4.15 - select and repeat a sound event
 
 GET STARTED
-Extract the complete ZIP into a new folder. App ZIP: open GamerSense.exe.
-Source ZIP: run BUILD-DEBUG.bat, then open the Debug executable.
-The app requires .NET 9 Desktop Runtime; building requires .NET 9 SDK.
+Extract the entire App ZIP into a NEW folder, then open GamerSense.exe.
+Requires the .NET 9 Desktop Runtime, as before. Your saved audio-device,
+mode and export-folder settings are retained. Stop the older app first.
+Source ZIP: run BUILD-DEBUG.bat and open the resulting Debug executable.
+Building requires the .NET 9 SDK. BUILD-DEBUG.bat is unchanged.
 
-KEEP YOUR WORKING PLAYBACK SETTINGS
-Mode: Direct cable capture (test)
-Game audio device: CABLE Output (VB-Audio Virtual Cable)
-True output: Speakers (C6)
-Game output: CABLE Input
-Windows Listen to this device: OFF
-Your existing selections and autosave choice are remembered.
+REVIEW NEW SAVED EVENTS
+1. Stop game playback in GamerSense and open Event review.
+2. Select a saved clip. The waveform shows the WHOLE clip.
+3. Drag across the waveform to highlight just the sound you want to label.
+   Drag either gold boundary to refine it, or type start/end seconds.
+   Whole clip restores the complete range. The dashed line marks the
+   detected spike, which may not be the exact sound onset.
+4. Check Repeat selection, then click Replay range to listen repeatedly.
+   Stop replay ends it. Changing the selection stops replay; click Replay
+   range again to hear the revised section. Uncheck Repeat to finish the
+   current pass. Review audio uses your selected true output device.
+5. Choose a label and describe overlap/distance/type in the notes.
+6. Approve & export writes ONLY the selected native audio frames plus the
+   JSON label to your approved folder, then removes the pending clip.
+   Use Delete clip for an unwanted pending sample, after confirmation.
 
-REVIEW AFTER PLAYING
-1. Stop GamerSense playback and open Event review.
-2. Select a saved clip. Click Replay range to hear it.
-3. Choose its sound tag and optional notes; adjust the range if needed.
-4. Approve & export writes the selected range as WAV plus a verified JSON
-   label to Documents/GamerSense/ApprovedClips, then removes the temporary
-   source from the review queue. Approval means useful training sample.
-5. Delete clip discards an unwanted clip after confirmation.
-There is no Save tags or Save loaded clip for later button. No separate
-Keep/Reduce choice is required. Approval is not a playback-volume instruction.
+REFINE YOUR EXISTING AC1 SAMPLES
+Click Open WAV for review and choose a WAV from your AC1 folder.
+The matching JSON label and notes load automatically when present.
+Drag/select/repeat to focus on the blast onset and its audible tail.
+Approve & export creates a NEW WAV + JSON pair. It keeps the original WAV
+and JSON intact, even when exporting into the same approved folder.
+Close sample leaves the original untouched. Reopen the original if you
+want to export another section with a different label.
 
-EXPORT FOLDER
-The selected destination appears above the saved list. Choose export folder
-changes it and remembers your choice. Open approved folder shows the exports.
-Both WAV and JSON must be exported before the source is removed. If export
-fails, the source remains available. Existing exports are not overwritten.
-Clips from the old Approved list that still exist are also shown in the queue;
-approve them again to export and remove them using this workflow.
+Separate grenade pin/throw sounds and detonator activation from the blast.
+New labels include grenade handling / throw, detonator activation and
+chambering. Mixed / uncertain remains available for overlapping sounds.
+Do not label all five seconds as an explosion if the blast is much shorter.
+Selection means the target sound is present; it does not prove other
+categories are absent. Approval means useful training sample, not a request
+to change that category's volume.
 
-RETENTION
-Unexported clips still expire one hour after their original save time.
-Cleanup runs about every 30 seconds while open, before saving, and at startup.
-At the 2 GB temporary audio limit, new saves pause until space becomes free.
-Approved exports are outside the temporary library and do NOT expire.
-The exports folder can grow beyond 2 GB; that limit applies to the review queue.
+WAV imports support PCM8/16/24/32 and float32, including extensible PCM/float,
+up to 60 seconds. Original channels/sample rate and selected bytes are kept.
+Labels include selection offsets in the original clip, original session
+bounds, spike timing and the imported parent filename when applicable.
+Existing exported metadata remains compatible.
 
-Automatic spikes and manual marks still save 2 seconds before/3 seconds after.
-Use Ctrl+Alt+F8 globally, or F8 while the app is focused, for manual marks.
-The live timeline/sample tools remain available under their checkbox. Loaded
-offline samples may still be replayed, but the approve/delete queue operates
-on automatically saved live clips.
+PLAYBACK AND STORAGE
+The live capture/output path and timing profiles are unchanged. The loop
+provider is for stopped-game review only. No experimental learning model
+has been installed and no automatic category volume adjustment is enabled.
+Pending clips retain the one-hour expiry and 2 GB save limit. Approved
+exports remain permanent outside that temporary library. Choose export
+folder changes the remembered destination.
 
-Validation: Debug/Release builds passed with zero warnings/errors. Tests cover
-native trimmed WAV and labels, failed-export source retention, destination
-guards, source removal after successful export, unique filenames, and permanent
-exports surviving temporary-library expiry. Existing audio/analysis checks pass.
-The simplified screen was rendered and Approve & export exercised.
-BUILD-DEBUG.bat is unchanged. Gameplay quality still needs user testing.
+VALIDATION
+Debug and Release builds: zero errors/warnings.
+Audio/analysis/storage/export checks pass. New tests cover frame-exact
+selection, invalid bounds, repeat wrapping and EOF, untouched originals,
+WAV + JSON reopening, selected-range provenance and safe export retries.
+UI checks exercise waveform drag, boundary refinement, numeric selection,
+repeat checkbox and approval/export/removal. The screen was rendered and
+inspected. Real device playback and listening quality still need your test.
+
+Source checks (from the source ZIP):
+dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj
+dotnet run --project tests/ReviewUiChecks/ReviewUiChecks.csproj

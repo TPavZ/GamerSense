@@ -22,7 +22,12 @@ public sealed class EventReviewPanel : FlowLayoutPanel
     private EventMonitor? _offline;
     private EventClip? _clip;
     private WasapiOut? _player;
-    private RawSourceWaveStream? _stream;
+    private ReviewWaveProvider? _reviewAudio;
+    private string? _importPath;
+    private bool _syncingRange;
+    private int _replayGeneration;
+    private readonly CheckBox _repeat = new() { Text = "Repeat selection", AutoSize = true };
+    private Button? _deleteButton;
     private MMDeviceEnumerator? _devices;
     private readonly AudioTimeline _timeline = new();
     private readonly ClipWaveform _waveform = new();
@@ -32,8 +37,8 @@ public sealed class EventReviewPanel : FlowLayoutPanel
     private readonly Label _info = new() { AutoSize = true, MaximumSize = new Size(610, 0), Text = "After the game, Stop playback and select a saved clip. Replay, tag, then approve or delete it." };
     private readonly NumericUpDown _before = new() { Minimum = 0, Maximum = 10, Value = 2, DecimalPlaces = 1, Increment = .5m, Width = 75 };
     private readonly NumericUpDown _after = new() { Minimum = 0, Maximum = 10, Value = 3, DecimalPlaces = 1, Increment = .5m, Width = 75 };
-    private readonly NumericUpDown _trimStart = new() { Minimum = 0, Maximum = 20, DecimalPlaces = 2, Increment = .1m, Width = 90 };
-    private readonly NumericUpDown _trimEnd = new() { Minimum = 0, Maximum = 20, DecimalPlaces = 2, Increment = .1m, Width = 90 };
+    private readonly NumericUpDown _trimStart = new() { Minimum = 0, Maximum = 20, DecimalPlaces = 3, Increment = .01m, Width = 100 };
+    private readonly NumericUpDown _trimEnd = new() { Minimum = 0, Maximum = 20, DecimalPlaces = 3, Increment = .01m, Width = 100 };
     private readonly NumericUpDown _threshold = new() { Minimum = -60, Maximum = 0, Value = -18, Width = 75 };
     private readonly ComboBox _label = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
     private readonly TextBox _notes = new() { Width = 600, PlaceholderText = "What is audible? Distance, overlap, weapon/vehicle type…" };
@@ -63,6 +68,7 @@ public sealed class EventReviewPanel : FlowLayoutPanel
         var savedButtons = Row();
         Button LibraryButton(string text, Action action) { var b = new Button { Text = text, AutoSize = true, ForeColor = Color.Black }; b.Click += (_, _) => Guard(action); savedButtons.Controls.Add(b); return b; }
         LibraryButton("Refresh saved clips", () => RefreshSaved(true));
+        LibraryButton("Open WAV for review", OpenReviewWav);
         LibraryButton("Open temporary clips", () => { Directory.CreateDirectory(_library.DirectoryPath); System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_library.DirectoryPath) { UseShellExecute = true }); });
         LibraryButton("Choose export folder", ChooseExportFolder);
         LibraryButton("Open approved folder", () => { Directory.CreateDirectory(_exportDirectory); System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_exportDirectory) { UseShellExecute = true }); });
@@ -70,9 +76,9 @@ public sealed class EventReviewPanel : FlowLayoutPanel
         _saved.BackColor = Color.FromArgb(30, 34, 42); _saved.ForeColor = Color.White;
         Controls.Add(_saved); Controls.Add(_storage); Controls.Add(_saveStatus);
         var decisions = Row();
-        void Decision(string text, Action action) { var b = new Button { Text = text, AutoSize = true, ForeColor = Color.Black }; b.Click += (_, _) => Guard(action); decisions.Controls.Add(b); }
+        Button Decision(string text, Action action) { var b = new Button { Text = text, AutoSize = true, ForeColor = Color.Black }; b.Click += (_, _) => Guard(action); decisions.Controls.Add(b); return b; }
         Decision("Approve & export", ApproveSaved);
-        Decision("Delete clip", DeleteSaved);
+        _deleteButton = Decision("Delete clip", DeleteSaved);
         var showLive = new CheckBox { Text = "Show live timeline and sample tools", AutoSize = true };
         showLive.CheckedChanged += (_, _) => _liveTools.Visible = showLive.Checked;
         Controls.Add(showLive); Controls.Add(_liveTools);
@@ -82,28 +88,37 @@ public sealed class EventReviewPanel : FlowLayoutPanel
         Button Add(string text, Action action) { var b = new Button { Text = text, AutoSize = true, ForeColor = Color.Black }; b.Click += (_, _) => Guard(action); buttons.Controls.Add(b); return b; }
         Add("Mark moment (Ctrl+Alt+F8)", () => { if (Monitor is null || !Monitor.Supported) throw new InvalidOperationException("Start monitoring with a supported audio format first."); Monitor.Mark(); RefreshTimeline(); });
         Add("Open audio sample", OpenSample);
-        Add("Show live session", () => { _offline = null; _clip = null; _lastId = -1; RefreshTimeline(); });
+        Add("Show live session", () => { StopReplay(); _offline = null; _clip = null; _savedItem = null; _importPath = null; _lastId = -1; _rangeGeneration++;
+            _waveform.Clip = null; _clipSpectrum.Frame = null; _waveform.Invalidate(); _clipSpectrum.Invalidate();
+            if (_deleteButton is not null) _deleteButton.Text = "Delete clip"; RefreshTimeline(); });
         _liveTools.Controls.Add(buttons);
         var threshold = Row(); threshold.Controls.Add(new Label { Text = "Loud peak threshold (dBFS)", AutoSize = true }); threshold.Controls.Add(_threshold); _liveTools.Controls.Add(threshold);
         _liveTools.Controls.Add(_timeline); _liveTools.Controls.Add(_events);
         var window = Row(); window.Controls.Add(new Label { Text = "Seconds before / after event", AutoSize = true }); window.Controls.Add(_before); window.Controls.Add(_after);
         var load = new Button { Text = "Load / refresh event clip", AutoSize = true, ForeColor = Color.Black }; load.Click += (_, _) => Guard(LoadClip); window.Controls.Add(load); _liveTools.Controls.Add(window);
-        var trim = Row(); trim.Controls.Add(new Label { Text = "Review range within clip (seconds)", AutoSize = true }); trim.Controls.Add(_trimStart); trim.Controls.Add(_trimEnd);
+        var trim = Row(); trim.Controls.Add(new Label { Text = "Start / end within clip (seconds)", AutoSize = true }); trim.Controls.Add(_trimStart); trim.Controls.Add(_trimEnd);
         var replay = new Button { Text = "Replay range", AutoSize = true, ForeColor = Color.Black }; replay.Click += (_, _) => Guard(Replay); trim.Controls.Add(replay);
-        var stop = new Button { Text = "Stop replay", AutoSize = true, ForeColor = Color.Black }; stop.Click += (_, _) => StopReplay(); trim.Controls.Add(stop); Controls.Add(trim);
+        var stop = new Button { Text = "Stop replay", AutoSize = true, ForeColor = Color.Black }; stop.Click += (_, _) => { StopReplay(); _info.Text = "Replay stopped."; }; trim.Controls.Add(stop);
+        trim.Controls.Add(_repeat);
+        var whole = new Button { Text = "Whole clip", AutoSize = true, ForeColor = Color.Black };
+        whole.Click += (_, _) => { if (_clip is not null) SetRange(0, _clip.Audio.Length / (double)_clip.Format.AverageBytesPerSecond); };
+        trim.Controls.Add(whole); Controls.Add(trim);
         Controls.Add(_waveform);
-        Controls.Add(new Label { Text = "Range waveform above; spectrum samples the end of the range", AutoSize = true });
+        Controls.Add(new Label { Text = "Drag across the waveform to select a sound; drag gold boundaries to refine it. Approve exports only the selection.", AutoSize = true });
         Controls.Add(_clipSpectrum);
         var review = Row();
-        _label.Items.AddRange(new object[] { "movement", "nearby footsteps", "own footsteps", "gunfire", "reload", "explosions / mortars", "air vehicle", "ground vehicle", "building / repair", "horn / alarm", "speech", "ambience", "mixed / uncertain" }); _label.SelectedIndex = 12;
+        _label.Items.AddRange(new object[] { "movement", "nearby footsteps", "own footsteps", "gunfire", "reload", "explosions / mortars", "air vehicle", "ground vehicle", "building / repair", "horn / alarm", "speech", "ambience", "mixed / uncertain", "grenade handling / throw", "detonator activation", "chambering" }); _label.SelectedIndex = 12;
         review.Controls.Add(_label);
         Controls.Add(review); Controls.Add(_notes); Controls.Add(decisions); Controls.Add(_info);
         _events.SelectedIndexChanged += (_, _) => { if (!_rebuilding) Guard(LoadClip); };
         _saved.SelectedIndexChanged += (_, _) => { if (!_refreshingSaved) Guard(LoadSaved); };
         _timeline.MarkerSelected += marker => { for (int i = 0; i < _events.Items.Count; i++) if (((MarkerRow)_events.Items[i]).Marker.Id == marker.Id) { _events.SelectedIndex = i; break; } };
         _threshold.ValueChanged += (_, _) => { if (Monitor is not null) Monitor.PeakThresholdDb = (double)_threshold.Value; };
-        _trimStart.ValueChanged += (_, _) => UpdateRange(); _trimEnd.ValueChanged += (_, _) => UpdateRange();
-        _timer.Tick += (_, _) => { RefreshTimeline(); Guard(() => RefreshSaved()); }; _timer.Start();
+        _trimStart.ValueChanged += (_, _) => { if (!_syncingRange) UpdateRange(); }; _trimEnd.ValueChanged += (_, _) => { if (!_syncingRange) UpdateRange(); };
+        _waveform.RangeSelected += (start, end) => SetRange(start, end);
+        _repeat.CheckedChanged += (_, _) => { if (_reviewAudio is not null) _reviewAudio.Repeat = _repeat.Checked; };
+        _timer.Tick += (_, _) => { RefreshTimeline(); Guard(() => RefreshSaved());
+            _waveform.Playhead = _reviewAudio is null ? null : (double)_trimStart.Value + _reviewAudio.PositionSeconds; _waveform.Invalidate(); }; _timer.Start();
         Guard(() => RefreshSaved(true));
         StyleButtons(this);
     }
@@ -144,12 +159,12 @@ public sealed class EventReviewPanel : FlowLayoutPanel
     private void LoadClip()
     {
         if (_events.SelectedItem is not MarkerRow selected || Monitor is null) return;
-        _savedItem = null; _refreshingSaved = true; _saved.ClearSelected(); _refreshingSaved = false;
+        _savedItem = null; _importPath = null; if (_deleteButton is not null) _deleteButton.Text = "Delete clip"; _refreshingSaved = true; _saved.ClearSelected(); _refreshingSaved = false;
         StopReplay();
         _clip = null; _waveform.Clip = null; _clipSpectrum.Frame = null; _rangeGeneration++;
         _waveform.Invalidate(); _clipSpectrum.Invalidate();
         _clip = Monitor.Extract(selected.Marker, (double)_before.Value, (double)_after.Value);
-        _trimStart.Value = 0; _trimEnd.Value = Math.Min(_trimEnd.Maximum, (decimal)(_clip.EndSeconds - _clip.StartSeconds));
+        _label.SelectedIndex = 12; _notes.Clear(); SetRange(0, _clip.Audio.Length / (double)_clip.Format.AverageBytesPerSecond);
         _info.Text = $"Frozen clip {_clip.StartSeconds:F2}–{_clip.EndSeconds:F2}s. Adjust the range to focus your review. Recent events may need refreshing after post-event audio arrives.";
         UpdateRange();
     }
@@ -180,11 +195,10 @@ public sealed class EventReviewPanel : FlowLayoutPanel
     {
         if (_saved.SelectedItem is not SavedEvent item) return;
         StopReplay(); _clip = null; _savedItem = null;
-        _clip = _library.Load(item); _savedItem = item;
+        _clip = _library.Load(item); _savedItem = item; _importPath = null; if (_deleteButton is not null) _deleteButton.Text = "Delete clip";
         _rebuilding = true; _events.ClearSelected(); _rebuilding = false;
         _rangeGeneration++; _label.SelectedItem = item.Label; _notes.Text = item.Notes;
-        _trimStart.Value = Math.Clamp((decimal)item.RangeStart, _trimStart.Minimum, _trimStart.Maximum);
-        _trimEnd.Value = Math.Clamp((decimal)item.RangeEnd, _trimEnd.Minimum, _trimEnd.Maximum);
+        SetRange(item.RangeStart, item.RangeEnd);
         _info.Text = $"Saved clip • {item.CreatedUtc.ToLocalTime():g} • {(item.Approved ? "Approved" : "Pending")}. Tag it below, adjust the range, then approve or delete.";
         UpdateRange();
     }
@@ -197,9 +211,16 @@ public sealed class EventReviewPanel : FlowLayoutPanel
     }
     private void ApproveSaved()
     {
-        if (_savedItem is null) throw new InvalidOperationException("Select a saved clip first.");
+        if (_savedItem is null && _importPath is null) throw new InvalidOperationException("Select a saved clip or open a WAV first.");
         StopReplay();
-        string path = ApprovedClipExporter.Approve(_library, _savedItem, Range(), _exportDirectory, _label.Text, _notes.Text);
+        string target = Path.TrimEndingDirectorySeparator(Path.GetFullPath(_exportDirectory));
+        string temporary = Path.TrimEndingDirectorySeparator(Path.GetFullPath(_library.DirectoryPath));
+        if (target.Equals(temporary, StringComparison.OrdinalIgnoreCase) || target.StartsWith(temporary + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Choose an approved export folder outside the temporary clip library.");
+        string path = _savedItem is not null
+            ? ApprovedClipExporter.Approve(_library, _savedItem, Range(), _exportDirectory, _label.Text, _notes.Text)
+            : ApprovedClipExporter.ExportImported(_clip!, Range(), _importPath!, _exportDirectory, _label.Text, _notes.Text);
+        _importPath = null; if (_deleteButton is not null) _deleteButton.Text = "Delete clip";
         _savedItem = null; _clip = null; _rangeGeneration++;
         _waveform.Clip = null; _clipSpectrum.Frame = null; _waveform.Invalidate(); _clipSpectrum.Invalidate();
         RefreshSaved(true); _info.Text = "Approved sample exported with its label, then removed from review: " + path;
@@ -207,6 +228,12 @@ public sealed class EventReviewPanel : FlowLayoutPanel
     }
     private void DeleteSaved()
     {
+        if (_importPath is not null)
+        {
+            StopReplay(); _importPath = null; _clip = null; _rangeGeneration++; _waveform.Clip = null; _waveform.Invalidate();
+            _clipSpectrum.Frame = null; _clipSpectrum.Invalidate(); if (_deleteButton is not null) _deleteButton.Text = "Delete clip";
+            _info.Text = "Sample closed. The original WAV and label were kept."; return;
+        }
         if (_savedItem is null) throw new InvalidOperationException("Select a saved clip first.");
         if (MessageBox.Show(this, "Delete this saved clip and its tags? This cannot be undone.", "Delete saved clip", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
         StopReplay(); _library.Delete(_savedItem); _savedItem = null; _clip = null; _rangeGeneration++;
@@ -215,8 +242,9 @@ public sealed class EventReviewPanel : FlowLayoutPanel
     }
     private async void UpdateRange()
     {
-        int generation = ++_rangeGeneration;
+        StopReplay(); int generation = ++_rangeGeneration;
         if (_clip is null) return;
+        _clipSpectrum.Frame = null; _clipSpectrum.Invalidate();
         _waveform.Clip = _clip; _waveform.RangeStart = (double)_trimStart.Value; _waveform.RangeEnd = (double)_trimEnd.Value; _waveform.Invalidate();
         try
         {
@@ -229,24 +257,62 @@ public sealed class EventReviewPanel : FlowLayoutPanel
     private EventClip Range()
     {
         if (_clip is null) throw new InvalidOperationException("Select an event first.");
-        double duration = _clip.EndSeconds - _clip.StartSeconds, start = (double)_trimStart.Value, end = (double)_trimEnd.Value;
-        if (end <= start || end > duration + .01) throw new InvalidOperationException("Choose a valid review range within the loaded clip.");
-        int first = (int)(start * _clip.Format.SampleRate) * _clip.Format.BlockAlign;
-        int last = Math.Min(_clip.Audio.Length, (int)(end * _clip.Format.SampleRate) * _clip.Format.BlockAlign);
-        if (last <= first) throw new InvalidOperationException("Review range is empty.");
-        var data = new byte[last - first]; Buffer.BlockCopy(_clip.Audio, first, data, 0, data.Length);
-        return _clip with { Audio = data, StartSeconds = _clip.StartSeconds + first / (double)_clip.Format.AverageBytesPerSecond, EndSeconds = _clip.StartSeconds + last / (double)_clip.Format.AverageBytesPerSecond };
+        return ReviewRange.Select(_clip, (double)_trimStart.Value, (double)_trimEnd.Value);
     }
+    private void SetRange(double start, double end)
+    {
+        if (_clip is null) return;
+        _syncingRange = true;
+        try
+        {
+            decimal duration = (decimal)(_clip.Audio.Length / (double)_clip.Format.AverageBytesPerSecond);
+            _trimStart.Value = 0; _trimEnd.Value = 0;
+            _trimStart.Maximum = duration; _trimEnd.Maximum = duration;
+            _trimStart.Value = Math.Clamp((decimal)start, 0, duration); _trimEnd.Value = Math.Clamp((decimal)end, 0, duration);
+        }
+        finally { _syncingRange = false; }
+        UpdateRange();
+    }
+    private void OpenReviewWav()
+    {
+        if (_running()) throw new InvalidOperationException("Stop live playback before reviewing an existing clip.");
+        using var dialog = new OpenFileDialog { Filter = "WAV clips|*.wav", InitialDirectory = _exportDirectory };
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+        var sample = ReviewRange.OpenWav(dialog.FileName);
+        StopReplay(); _refreshingSaved = true; _saved.ClearSelected(); _refreshingSaved = false;
+        _savedItem = null; _clip = sample.Clip; _importPath = dialog.FileName;
+        _rebuilding = true; _events.ClearSelected(); _rebuilding = false;
+        if (!_label.Items.Contains(sample.Label)) _label.Items.Add(sample.Label);
+        _label.SelectedItem = sample.Label; _notes.Text = sample.Notes;
+        if (_deleteButton is not null) _deleteButton.Text = "Close sample";
+        SetRange(0, _clip.Audio.Length / (double)_clip.Format.AverageBytesPerSecond);
+        _info.Text = "Existing sample loaded. Select the exact sound and approve to export a new WAV + label. The original stays intact.";
+    }
+
     private void Replay()
     {
         if (_running()) throw new InvalidOperationException("Stop live playback before replaying a clip.");
         var clip = Range(); string output = _outputId() ?? throw new InvalidOperationException("Select your true output on the Playback tab first.");
         StopReplay();
         _devices = new MMDeviceEnumerator(); _player = new WasapiOut(_devices.GetDevice(output), AudioClientShareMode.Shared, true, 30);
-        _stream = new RawSourceWaveStream(new MemoryStream(clip.Audio, false), clip.Format); _player.Init(_stream); _player.Play();
-        _info.Text = "Replaying the selected range through your true output.";
+        _reviewAudio = new ReviewWaveProvider(clip, _repeat.Checked); _player.Init(_reviewAudio);
+        int generation = _replayGeneration;
+        _player.PlaybackStopped += (_, args) =>
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+            try { BeginInvoke((Action)(() => { if (generation != _replayGeneration || IsDisposed) return;
+                StopReplay(); _info.Text = args.Exception is null ? "Replay finished." : "Replay stopped: " + args.Exception.Message; })); }
+            catch (InvalidOperationException) { }
+        };
+        _player.Play();
+        _info.Text = _repeat.Checked ? "Repeating the selection. Stop replay to finish." : "Replaying the selection through your true output.";
     }
-    public void StopReplay() { try { _player?.Stop(); } catch { } _player?.Dispose(); _stream?.Dispose(); _devices?.Dispose(); _player = null; _stream = null; _devices = null; }
+    public void StopReplay()
+    {
+        _replayGeneration++; try { _player?.Stop(); } catch { }
+        _player?.Dispose(); _devices?.Dispose(); _player = null; _reviewAudio = null; _devices = null;
+        _waveform.Playhead = null; _waveform.Invalidate();
+    }
     private void OpenSample()
     {
         if (_running()) throw new InvalidOperationException("Stop live playback before opening an offline sample.");

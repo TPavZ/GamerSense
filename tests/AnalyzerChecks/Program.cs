@@ -339,3 +339,4 @@ using (var demo = new AudioFileReader(Path.Combine(AppContext.BaseDirectory, "Sa
 Console.WriteLine("PASS offline vehicle demo: decoding, activity markers, duration, and context extraction");
 EventLibraryChecks.Run();
 ApprovalExportChecks.Run();
+ReviewRangeChecks.Run();

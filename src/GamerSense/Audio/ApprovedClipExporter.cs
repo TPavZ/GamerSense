@@ -21,17 +21,32 @@ public static class ApprovedClipExporter
         if (range.SessionId != original.SessionId || range.Marker.Id != original.Marker.Id || range.StartSeconds < original.StartSeconds ||
             range.EndSeconds > original.EndSeconds + 1.0 / range.Format.SampleRate || range.Audio.Length == 0)
             throw new InvalidOperationException("Review range does not belong to this saved clip.");
+        string wav = Export(range, target, item.Id, label, notes, original);
+        library.Delete(item);
+        return wav;
+    }
+
+    // Imported approved clips remain intact; export a new selected-range pair.
+    public static string ExportImported(EventClip original, EventClip range, string sourceFile, string directory, string label, string notes)
+    {
+        string identity = Path.GetFileName(sourceFile) + "\n" + Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(sourceFile)));
+        string id = "review-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)))[..12].ToLowerInvariant();
+        return Export(range, Path.GetFullPath(directory), id, label, notes, original, Path.GetFileName(sourceFile));
+    }
+
+    private static string Export(EventClip range, string target, string id, string label, string notes, EventClip original, string? sourceFile = null)
+    {
         Directory.CreateDirectory(target);
         string fingerprint = Convert.ToHexString(SHA256.HashData(range.Audio)) + "\n" + label + "\n" + notes + "\n" + range.StartSeconds.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
         string hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(fingerprint)))[..12].ToLowerInvariant();
-        string name = $"wardogs-{item.Id}-{hash}.wav";
+        string name = $"wardogs-{id}-{hash}.wav";
         string wav = Path.Combine(target, name), json = Path.ChangeExtension(wav, ".json");
         string staging = Path.Combine(target, ".pending-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(staging);
         try
         {
             string temporaryWav = Path.Combine(staging, name), temporaryJson = Path.ChangeExtension(temporaryWav, ".json");
-            EventMonitor.Save(range, temporaryWav, label, "Unspecified", notes, true, "useful training sample", "unspecified");
+            EventMonitor.Save(range, temporaryWav, label, "Unspecified", notes, true, "useful training sample", "unspecified", original, sourceFile);
             if (File.Exists(wav) || File.Exists(json))
             {
                 if (!File.Exists(wav) || !File.Exists(json) ||
@@ -46,7 +61,6 @@ public static class ApprovedClipExporter
                 catch { File.Delete(wav); throw; }
             }
             // Source deletion failure leaves the permanent pair intact for retry.
-            library.Delete(item);
             return wav;
         }
         finally
