@@ -35,7 +35,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.4.17 — Live monitoring";
+        Text = "GamerSense v0.4.18 — Live monitoring";
         using (var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("GamerSense.AppIcon.ico"))
         {
             if (iconStream is not null) { _appIcon = new System.Drawing.Icon(iconStream); Icon = _appIcon; }

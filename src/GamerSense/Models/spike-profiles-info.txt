@@ -1,5 +1,5 @@
-Combined category similarity profiles from the 235-file private research collection.
-3,424 eligible positive weak-label windows. Includes reviewed WARDOGS clips,
+Combined category similarity profiles from the 325-file private research collection.
+4,515 eligible positive weak-label windows. Includes AC1 and AC2 reviewed WARDOGS clips,
 real firearm/footstep examples, Sauerbraten Q009 effects, Stunt Rally effects
 and WuxiaScrub helicopter SFX. Tentative suggestions only, not source separation
 or confidence probabilities. Machine guesses are never approved labels.

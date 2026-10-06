@@ -1,4 +1,4 @@
-GamerSense v0.4.17 - live spike capture and tentative category review
+GamerSense v0.4.18 - live spike capture and tentative category review
 
 GET STARTED
 Stop the older app. Extract the entire App ZIP into a NEW folder and open
@@ -16,8 +16,8 @@ LIVE MONITORING
    Stop retains available shorter tails. Automatic triggers have a 2-second
    cooldown; this is activity monitoring, not a detector of every sound.
 3. Background analysis compares short windows near each spike with the
-   combined internal profiles, then stores an UNVERIFIED category suggestion
-   and alternatives with the clip. This uses the latest reviewed examples and
+   combined internal profiles updated with AC2 approvals, then stores an UNVERIFIED category suggestion
+   and alternatives with the clip. This includes building / repair suggestions and the latest reviewed examples and
    external-source learning package. The old experimental Wardogs checkbox
    and wording have been removed. Suggestions run internally for captures.
 4. Watch the captured count and processing status; F8 still marks manually.
