@@ -210,3 +210,37 @@ legacy saved device IDs, accurately labeled timing report, and all observer,
 feature parity, classifier fallback, format and disposal regressions passed.
 Debug/Release compilation passed with 0 warnings/errors. Actual WASAPI hardware
 startup/latency and listening quality have not been tested in this workspace.
+
+## v0.3.4 — keep session readings after Stop
+
+Copy audio details now includes a retained playback-session summary. It records
+capture packet count, capture-batch min/average/max, and playback-queue
+min/average/max after delivery. These values survive Stop, along with the
+actual session device names/formats and timing profile. Top-level Running now
+and instantaneous zero values describe the current state; the retained summary
+describes the last session. Starting another session replaces the history.
+
+The metrics tap uses a nonblocking try-lock, with report formatting outside the
+lock. This is a diagnostic update. Stable buffer values, passthrough bytes,
+device-selection memory, and the conservative matcher are unchanged. No claim
+is made that this version fixes the reported half-second delay.
+
+Test with Stable playback for 20–30 seconds. Stop if convenient, press Copy
+audio details, and paste the entire report into chat. Compare matching on/off
+in separate runs if needed. The retained queue readings are after capture
+batches are added, so they can be higher than UI readings between deliveries.
+These metrics still do not measure complete capture-to-ear latency.
+
+A useful independent comparison is to temporarily route Wardogs straight to
+Speakers (C6), bypassing GamerSense, then restore CABLE Input and compare the
+same event. If both paths have similar delay, source/output timing needs
+investigation; if only the app path does, the added route needs investigation.
+Do not infer the cause from a stopped zero queue or classification display.
+
+The virtual driver also has its own buffers; its official reference describes
+latency statistics. No virtual-driver setting is changed by GamerSense:
+https://vb-audio.com/Cable/VBCABLE_ReferenceManual.pdf
+
+Validation: all existing checks plus retained summary statistics, invalid/stopped
+sample rejection, and fresh-session reset passed. Debug and Release builds
+passed with 0 warnings/errors. Physical route latency remains unverified.

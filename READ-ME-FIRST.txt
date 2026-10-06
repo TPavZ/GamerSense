@@ -1,10 +1,9 @@
-GamerSense v0.3.3
-Build with BUILD-DEBUG.bat and launch the built GamerSense.exe.
-Stop playback, select Lower latency (test), then Start to test shorter buffers.
-If audio crackles, Stop, select Stable playback, and Start again.
-Click Copy audio details while playing and paste the text into the chat to
-help diagnose delay. Requested and measured queue/batch values do not equal
-full end-to-end latency. See README.md for validation and timing details.
+GamerSense v0.3.4 — retained playback diagnostics
+Build with BUILD-DEBUG.bat, then launch the built GamerSense.exe.
+Keep Stable playback selected. Play game audio for 20–30 seconds, then click
+Copy audio details. You may Stop first: the last playback-session measurements
+are now retained. Paste the entire report into chat.
 
-All v0.3.2 matching and observer fixes are included. Remembered device IDs are
-preserved. Developer checks: dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj
+This update is for diagnosis, not a proven latency fix. Stable audio timing,
+device selection memory, observer queue, and conservative matching are retained.
+Developer checks: dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj

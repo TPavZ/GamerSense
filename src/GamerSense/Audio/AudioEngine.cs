@@ -18,12 +18,14 @@ public sealed class AudioEngine : IDisposable
     public bool LowerLatency { get; set; }
     public AudioTimingProfile ActiveTiming { get; private set; } = AudioTimingProfile.Stable;
     private string _captureFormat = "Not started", _outputMixFormat = "Not started";
-    public string AudioDetails => $"GamerSense v0.3.3\nRunning: {IsRunning}\nMode: {(ActiveTiming == AudioTimingProfile.Responsive ? "Lower latency" : "Stable")}\n" +
+    private PlaybackDiagnostics? _diagnostics;
+    public string AudioDetails => $"GamerSense v0.3.4\nRunning now: {IsRunning}\nMode: {(ActiveTiming == AudioTimingProfile.Responsive ? "Lower latency" : "Stable")}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
         $"Queued audio now: {QueuedAudioMs:F1} ms\nLast capture batch: {CaptureBatchMs:F1} ms\n" +
         $"Capture format: {_captureFormat}\nOutput device mix format: {_outputMixFormat}\nMatching enabled: {DetectionEnabled}\n" +
-        "Queue/batch values are partial diagnostics, not total end-to-end latency.";
+        "Queue/batch values are partial diagnostics, not total end-to-end latency.\n\n" +
+        "PLAYBACK SESSION SUMMARY (retained after Stop)\n" + (_diagnostics?.Report() ?? "No playback session recorded yet.");
     public AnalysisFrame? Analysis => _analyzer?.Latest;
     private ExperimentalDetector? _detector;
     private bool _detectionEnabled = true;
@@ -50,6 +52,8 @@ public sealed class AudioEngine : IDisposable
         _capture = LowerLatency ? new ResponsiveLoopbackCapture(captureEndpoint, ActiveTiming.CaptureBufferMs)
             : new WasapiLoopbackCapture(captureEndpoint);
         _captureFormat = _capture.WaveFormat.ToString();
+        _diagnostics = new PlaybackDiagnostics(ActiveTiming, captureEndpoint.FriendlyName, outputEndpoint.FriendlyName,
+            _captureFormat, _outputMixFormat);
         _buffer = new BufferedWaveProvider(_capture.WaveFormat)
         {
             BufferDuration = TimeSpan.FromMilliseconds(ActiveTiming.BufferCapacityMs),
@@ -86,6 +90,7 @@ public sealed class AudioEngine : IDisposable
         {
             _buffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
             Volatile.Write(ref _captureBatchMs, 1000.0 * e.BytesRecorded / _capture.WaveFormat.AverageBytesPerSecond);
+            _diagnostics?.Record(_buffer.BufferedDuration.TotalMilliseconds, CaptureBatchMs);
 
             // Give the output a small amount of real audio before it begins reading.
             // Starting against an empty buffer was causing repeated starvation on

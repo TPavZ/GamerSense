@@ -27,7 +27,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.3.3 — Experimental";
+        Text = "GamerSense v0.3.4 — Experimental";
         Width = 540;
         Height = 860;
         StartPosition = FormStartPosition.CenterScreen;
@@ -85,7 +85,7 @@ public sealed class MainForm : Form
             try
             {
                 Clipboard.SetText(_engine.AudioDetails + $"\nInput: {_input.Text}\nOutput: {_output.Text}");
-                SetStatus("Audio details copied — paste them into the chat.");
+                SetStatus("Audio details copied, including the last playback session.");
             }
             catch (System.Runtime.InteropServices.ExternalException) { SetStatus("Clipboard busy; try again."); }
         };

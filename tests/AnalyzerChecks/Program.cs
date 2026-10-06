@@ -161,3 +161,13 @@ using (var engine = new AudioEngine())
 var legacySettings = System.Text.Json.JsonSerializer.Deserialize<GamerSense.Settings.AppSettings>("{\"InputDeviceId\":\"input-123\",\"OutputDeviceId\":\"output-456\"}")!;
 if (legacySettings.LowerLatency || legacySettings.InputDeviceId != "input-123" || legacySettings.OutputDeviceId != "output-456") throw new Exception("Legacy selection compatibility failed");
 Console.WriteLine("PASS stable defaults, shorter responsive profile, diagnostic labeling, legacy device-selection compatibility");
+
+var retained = new PlaybackDiagnostics(AudioTimingProfile.Stable, "input", "output", "float48k", "float48k");
+retained.Record(40, 50); retained.Record(70, 50);
+string prior = retained.Report();
+if (!prior.Contains("40.0 / 55.0 / 70.0") || !prior.Contains("50.0 / 50.0 / 50.0") || !prior.Contains("Capture packets observed: 2")) throw new Exception("Session metrics incorrect");
+retained.Record(0, 0); retained.Record(double.NaN, 1);
+if (retained.Report() != prior) throw new Exception("Stopped/invalid metrics overwrote retained session");
+var fresh = new PlaybackDiagnostics(AudioTimingProfile.Stable, "input", "output", "float48k", "float48k");
+if (!fresh.Report().Contains("No audio packets")) throw new Exception("New session retained prior metrics");
+Console.WriteLine("PASS retained session timing, valid sample accounting, and fresh session reset");
