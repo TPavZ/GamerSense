@@ -313,3 +313,10 @@ sizes from 16 to 256 px. The ICO is embedded as the executable ApplicationIcon
 and as the main form's icon. It travels with builds and requires no separate
 icon-file lookup at runtime. Debug and Release builds passed with 0 warnings /
 0 errors. Audio and event-review behavior are unchanged from v0.4.0.
+
+## v0.4.2 — transparent black/teal app icon
+
+Revised the icon to a transparent background with primarily black headset and
+waveform surfaces, highlighted in teal. Removed the amber accents. Seven Windows
+icon sizes are bundled. App/window icon integration is preserved. Debug and
+Release builds passed with 0 warnings/errors. Audio behavior is unchanged.
