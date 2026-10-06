@@ -17,6 +17,9 @@ public sealed class EventMonitor
     private readonly List<AudioMarker> _markers = new();
     private readonly List<LevelPoint> _levels = new();
     private readonly List<long> _gaps = new();
+    private readonly List<AudioMarker> _pending = new();
+    public event Action<EventClip>? ClipReady;
+    public event Action<string>? ClipSkipped;
     private readonly string _sourceName;
     private readonly string _sessionId = Guid.NewGuid().ToString("N");
     private long _frames;
@@ -92,10 +95,12 @@ public sealed class EventMonitor
             _baselineDb += (rmsDb - _baselineDb) * .08;
             _gaps.RemoveAll(x => x < _frames - _ring.Length / _format.BlockAlign);
         }
+        CompletePending(false);
     }
     private void Add(double seconds, string kind, float db)
     {
         _markers.Add(new AudioMarker(++_id, Math.Max(0, seconds), kind, db));
+        if (ClipReady is not null) _pending.Add(_markers[^1]);
         if (_markers.Count > 200) _markers.RemoveAt(0);
     }
     public void MarkGap()
@@ -105,6 +110,26 @@ public sealed class EventMonitor
     public AudioMarker Mark()
     {
         lock (_gate) { Add(_frames / (double)_format.SampleRate, "Manual mark", -100); return _markers[^1]; }
+    }
+    // Called on the analysis worker, never the playback callback. Freeze clips
+    // once their context arrives, before the ring overwrites them.
+    public void CompletePending(bool sessionEnded)
+    {
+        var ready = new List<EventClip>();
+        var skipped = new List<string>();
+        lock (_gate)
+        {
+            double time = _frames / (double)_format.SampleRate;
+            foreach (var marker in _pending.ToArray())
+            {
+                if (!sessionEnded && time < marker.Seconds + 3) continue;
+                _pending.Remove(marker);
+                try { ready.Add(Extract(marker)); }
+                catch (InvalidOperationException ex) { skipped.Add(ex.Message); }
+            }
+        }
+        foreach (var clip in ready) ClipReady?.Invoke(clip);
+        foreach (var reason in skipped) ClipSkipped?.Invoke(reason);
     }
     public AudioMarker[] Markers() { lock (_gate) return _markers.ToArray(); }
     public LevelPoint[] Levels() { lock (_gate) return _levels.ToArray(); }
@@ -127,10 +152,10 @@ public sealed class EventMonitor
             return new EventClip(audio, _format, start / (double)_format.SampleRate, end / (double)_format.SampleRate, marker, _sourceName, _sessionId);
         }
     }
-    public static void Save(EventClip clip, string wavPath, string label, string intent, string notes)
+    public static void Save(EventClip clip, string wavPath, string label, string intent, string notes, bool verified = true)
     {
         using (var writer = new WaveFileWriter(wavPath, clip.Format)) writer.Write(clip.Audio, 0, clip.Audio.Length);
-        var metadata = new { game = "WARDOGS", audio = Path.GetFileName(wavPath), label, intent, notes, verified = true,
+        var metadata = new { game = "WARDOGS", audio = Path.GetFileName(wavPath), label, intent, notes, verified,
             sourceName = clip.SourceName, sessionId = clip.SessionId,
             labelSource = "manual event review", clipStartSessionSeconds = clip.StartSeconds, clipEndSessionSeconds = clip.EndSeconds,
             markerSessionSeconds = clip.Marker.Seconds, markerKind = clip.Marker.Kind,

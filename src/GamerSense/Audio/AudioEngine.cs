@@ -30,7 +30,8 @@ public sealed class AudioEngine : IDisposable
     private MeteredPlaybackProvider? _playbackMeter;
     private string _endpointTiming = "No Windows stream settings recorded yet.\n";
     public EventMonitor? Events { get; private set; }
-    public string AudioDetails => $"GamerSense v0.4.11\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
+    public EventLibrary SavedEvents { get; } = new();
+    public string AudioDetails => $"GamerSense v0.4.12\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         (ActiveTiming.LowEnginePeriod ? "Low-period mode: Windows chooses capacity from its supported period; 30 ms request applies only to fallback.\n" : "") +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
@@ -110,6 +111,8 @@ public sealed class AudioEngine : IDisposable
         var analyzer = _analyzer;
         var detector = _detector;
         var events = Events = new EventMonitor(_capture.WaveFormat);
+        events.ClipReady += SavedEvents.Enqueue;
+        events.ClipSkipped += SavedEvents.ReportSkipped;
         _tap = new AnalysisTap((data, count) => { analyzer.Tap(data, count); detector.Tap(data, count); events.Tap(data, count); },
             () => { analyzer.Reset(); detector.Reset(); events.MarkGap(); });
         _capture.StartRecording();
@@ -157,6 +160,7 @@ public sealed class AudioEngine : IDisposable
         IsRunning = false;
         Volatile.Write(ref _captureBatchMs, 0);
         Interlocked.Exchange(ref _tap, null)?.Dispose();
+        Events?.CompletePending(true);
         _detector?.Dispose();
         _detector = null;
         _analyzer?.Dispose();
@@ -186,6 +190,6 @@ public sealed class AudioEngine : IDisposable
         _enumerator = null;
     }
 
-    public void Dispose() => Stop();
+    public void Dispose() { Stop(); SavedEvents.Dispose(); }
 }
 

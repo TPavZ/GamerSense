@@ -474,3 +474,47 @@ This is an experiment, not a verified latency improvement. Repeat the supplied
 flash/click test, record it with the same phone position, and copy the new audio
 details while playback is active or after Stop. If audio becomes noisy or stalls,
 return to Direct refill with CABLE Input; the previous input selection is retained.
+
+## v0.4.12 — persistent spike review
+
+Live spikes, level rises and manual F8 / Ctrl+Alt+F8 marks are automatically
+frozen with two seconds before and three seconds after each event, then saved
+as native-format WAV plus JSON under LocalAppData/GamerSense/SavedEvents.
+At Stop, pending events are saved with the available tail (shown as short tail).
+Clips crossing known analysis gaps are rejected and reported, rather than
+presented as continuous audio. Offline sample markers are not automatically saved.
+
+The Event review tab opens the persistent Pending list, including clips from
+earlier sessions and app restarts. Select a clip, stop live playback to replay,
+adjust its review range, choose sound label and Keep/Reduce/Unsure intent,
+add notes, and Save tags or Approve clip. Approval persists the review range
+and tags without destroying the original clip. Approved and All saved clips
+filters are available. Delete clip removes its library WAV and JSON after a
+confirmation. Export WAV + label exports the current range; pending saved
+clips are exported with verified=false. Approval does not alter playback or
+automatically train a model.
+
+Autosave can be disabled and the choice is remembered. Saved audio has no
+automatic expiry. A 2 GB audio storage budget pauses new saves when reached;
+existing clips are retained. Delete unwanted clips to make room. The folder
+can be opened from the app. At 48 kHz stereo float, each five-second clip is
+about 1.9 MB, so busy sessions can consume substantial space.
+
+Completed clips are copied on the bounded analysis worker, then passed to a
+separate below-normal disk worker with a bounded 32-clip queue and nonblocking
+enqueue. Slow/full disks do not block the playback callback. Skipped clips,
+pending writes and storage errors are displayed. Normal app close drains
+queued saves; forced termination can lose in-flight clips. WAVs are committed
+before atomic JSON replacement. The rolling live timeline remains 60 seconds,
+but saved clips are independent of it. Previous captures cannot be recovered.
+
+The live timeline/sample tools are collapsible. Recording-endpoint capture,
+direct-refill output, buffer timings, selection memory, icon, model matching,
+and spectrum remain as in v0.4.11. BUILD-DEBUG.bat is unchanged.
+
+Validation includes byte-identical retained native WAV data, full post-event
+context, ring expiry and restart, on-disk approval/notes/range persistence,
+discard, stopped-session tails, gap rejection, disabled autosave, storage limits,
+bounded nonblocking enqueue under simulated stalled storage, and the existing
+playback/analysis checks. The review UI was rendered and tag/approval filtering
+was exercised. Gameplay quality with autosaving still needs user testing.

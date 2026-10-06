@@ -337,3 +337,4 @@ using (var demo = new AudioFileReader(Path.Combine(AppContext.BaseDirectory, "Sa
     if (eventClip.SourceName != "demo-vehicles.wav" || eventClip.Audio.Length == 0) throw new Exception("Offline event review failed");
 }
 Console.WriteLine("PASS offline vehicle demo: decoding, activity markers, duration, and context extraction");
+EventLibraryChecks.Run();

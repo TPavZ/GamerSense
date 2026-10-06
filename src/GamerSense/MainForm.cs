@@ -36,7 +36,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.4.11 — Event review";
+        Text = "GamerSense v0.4.12 — Event review";
         using (var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("GamerSense.AppIcon.ico"))
         {
             if (iconStream is not null) { _appIcon = new System.Drawing.Icon(iconStream); Icon = _appIcon; }
@@ -77,6 +77,7 @@ public sealed class MainForm : Form
         _engine.LowEnginePeriod = _settings.LowEnginePeriod;
         _engine.RealTimeRefill = _settings.RealTimeRefill;
         _engine.DirectCableCapture = _settings.DirectCableCapture;
+        _engine.SavedEvents.AutoSaveEnabled = _settings.AutoSaveEvents;
         panel.Controls.Add(_playbackMode);
         panel.Controls.Add(new Label { Text = "LIVE AUDIO", AutoSize = true });
         panel.Controls.Add(_meter);
@@ -97,7 +98,8 @@ public sealed class MainForm : Form
         panel.Controls.Add(_copyAudioDetails);
         _review = new EventReviewPanel(() => _engine.Events, () => _engine.IsRunning,
             () => (_output.SelectedItem as AudioDeviceInfo)?.Id == (_input.SelectedItem as AudioDeviceInfo)?.Id
-                ? null : (_output.SelectedItem as AudioDeviceInfo)?.Id);
+                ? null : (_output.SelectedItem as AudioDeviceInfo)?.Id, _engine.SavedEvents,
+            enabled => { _settings.AutoSaveEvents = enabled; _settings.Save(); });
         var tabs = new TabControl { Dock = DockStyle.Fill, ForeColor = Color.Black };
         var playback = new TabPage("Playback") { BackColor = BackColor, ForeColor = ForeColor };
         var review = new TabPage("Event review") { BackColor = BackColor, ForeColor = ForeColor };

@@ -1,29 +1,59 @@
-GamerSense v0.4.11 - direct cable capture comparison
+GamerSense v0.4.12 - saved spike review
 
-1. Extract this entire ZIP into a new folder.
-2. App ZIP: open GamerSense.exe. Source ZIP: run BUILD-DEBUG.bat,
-   then open src/GamerSense/bin/Debug/net9.0-windows/GamerSense.exe.
-   The app needs the .NET 9 Desktop Runtime; building needs the .NET 9 SDK.
-3. Turn OFF Windows Listen to this device for CABLE Output.
-4. Choose playback mode: Direct cable capture (test).
-5. Choose GAME AUDIO / VIRTUAL DEVICE: CABLE Output (VB-Audio Virtual Cable).
-6. Choose TRUE OUTPUT: Speakers (C6).
-7. Keep the game/test video's audio output on CABLE Input.
-8. Press START GAMERSENSE. Verify clean audio first.
-9. Replay GamerSense-delay-test.avi using the same player and volume.
-   Record the screen and speakers with the phone in the same position.
-10. Send the recording labelled v0.4.11 Direct cable capture, along with
-    Copy audio details from this session (during playback or after Stop).
+GET STARTED
+Extract the whole ZIP into a new folder. App ZIP: open GamerSense.exe.
+Source ZIP: run BUILD-DEBUG.bat, then open the Debug build executable.
+The app requires .NET 9 Desktop Runtime; building requires .NET 9 SDK.
 
-This is an optional comparison mode, not a confirmed delay reduction.
-It reads the cable's recording endpoint instead of playback loopback.
-Direct refill playback settings, spectrum, matching, event review and icon
-are retained. No gain changes or sound filtering have been added.
+KEEP YOUR WORKING AUDIO SETTINGS
+Mode: Direct cable capture (test)
+Game audio device: CABLE Output (VB-Audio Virtual Cable)
+True output: Speakers (C6)
+Game output: CABLE Input
+Windows Listen to this device: OFF
+Your existing device selections and mode are remembered.
 
-If audio crackles or fails, Stop, select Direct refill (test), confirm
-CABLE Input and Speakers (C6), and Start. Existing input memory is separate.
-Keep Windows Listen off while running GamerSense.
+WHILE PLAYING
+On Event review, leave Automatically save spikes and manual marks checked.
+Spikes and level rises are saved with 2 seconds before and 3 seconds after.
+Use Ctrl+Alt+F8 globally, or F8 while this app is focused, to mark an event.
+You can keep playing without reviewing clips immediately.
 
-Validation: Debug/Release builds passed with zero warnings/errors;
-automated playback, analysis, settings and event-review checks passed.
-Real-device audio quality and audible delay still require your test.
+AFTER THE GAME
+1. Stop GamerSense playback.
+2. Open Event review. Select a clip in the Pending list.
+3. Use Replay range to hear it. Adjust the start/end range if useful.
+4. Choose the sound tag and Keep, Reduce or Unsure, and add optional notes.
+5. Choose Approve clip to keep it as reviewed, or Save tags to leave it Pending.
+6. Choose Delete clip for an unwanted sample; deletion asks for confirmation.
+7. Use Approved or All saved clips to return to reviewed clips.
+8. Export WAV + label exports the selected range and a JSON label when needed.
+   Pending saved clips remain unverified in exports.
+Scroll the panel if the tag/approval buttons are below the visible area.
+
+Clips remain available after Stop, after another game session, and after an
+app restart. They are saved under %LOCALAPPDATA%/GamerSense/SavedEvents,
+independently of the extracted app folder. Open saved folder shows them.
+Do not move or rename library WAV/JSON pairs unless keeping your own backup.
+
+STORAGE AND SAVING
+Saved clips do not expire automatically. The audio storage budget is 2 GB;
+when it is full, new saves stop and a warning appears. Existing clips are kept.
+Delete unwanted saved clips to make room. At the current audio format,
+a five-second clip uses about 1.9 MB. Busy sessions can create many clips.
+The screen shows pending/approved counts, used space and unsaved/skipped clips.
+Known analysis gaps or a slow/full disk can prevent an event from being saved.
+Clips saved at Stop may have a shorter tail, identified in their list entry.
+Allow a normal close to finish queued saves; forced termination may lose them.
+
+Show live timeline and sample tools reveals the existing 60-second live view
+and offline sample tools. Its expiry does not affect saved clips. Offline
+sample events are not auto-saved; Save loaded clip for later saves the range.
+
+Approvals and Keep/Reduce labels do not change audible playback or train the
+model automatically. This update preserves v0.4.11 capture/output settings.
+Please check audio remains clean during a normal game with autosave enabled.
+
+Validation: Debug/Release builds passed with zero warnings/errors; existing
+checks and new disk persistence/review/delete/queue/storage tests passed.
+BUILD-DEBUG.bat is retained unchanged. Live-device testing is still needed.

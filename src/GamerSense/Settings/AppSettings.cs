@@ -13,6 +13,7 @@ public sealed class AppSettings
     public bool RealTimeRefill { get; set; }
     public bool DirectCableCapture { get; set; }
     public string? DirectCaptureDeviceId { get; set; }
+    public bool AutoSaveEvents { get; set; } = true;
 
     private static string SettingsDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
