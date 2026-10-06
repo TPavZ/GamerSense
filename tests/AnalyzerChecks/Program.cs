@@ -242,7 +242,7 @@ if (AudioTimingProfile.Responsive.PrebufferMs != AudioTimingProfile.Stable.Prebu
     AudioTimingProfile.Responsive.CaptureBufferMs >= AudioTimingProfile.Stable.CaptureBufferMs ||
     AudioTimingProfile.Responsive.BufferCapacityMs <= AudioTimingProfile.Responsive.PrebufferMs)
     throw new Exception("Invalid responsive profile");
-using (var engine = new AudioEngine())
+using (var engine = new AudioEngine(new EventLibrary(Path.Combine(AppContext.BaseDirectory, "engine-test-events"))))
 {
     if (engine.LowerLatency || engine.ActiveTiming != AudioTimingProfile.Stable) throw new Exception("Stable default changed");
     if (!engine.AudioDetails.Contains("not total end-to-end latency")) throw new Exception("Misleading timing report");

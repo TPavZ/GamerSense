@@ -1,4 +1,4 @@
-GamerSense v0.4.12 - saved spike review
+GamerSense v0.4.13 - saved spike review
 
 GET STARTED
 Extract the whole ZIP into a new folder. App ZIP: open GamerSense.exe.
@@ -31,15 +31,19 @@ AFTER THE GAME
    Pending saved clips remain unverified in exports.
 Scroll the panel if the tag/approval buttons are below the visible area.
 
-Clips remain available after Stop, after another game session, and after an
-app restart. They are saved under %LOCALAPPDATA%/GamerSense/SavedEvents,
+Clips remain available after Stop or an app restart until one hour after saving.
+This includes Pending and Approved clips. Approval does not reset the timer.
+Export useful clips before expiry if you want to keep them permanently. They are saved under %LOCALAPPDATA%/GamerSense/SavedEvents,
 independently of the extracted app folder. Open saved folder shows them.
 Do not move or rename library WAV/JSON pairs unless keeping your own backup.
 
 STORAGE AND SAVING
-Saved clips do not expire automatically. The audio storage budget is 2 GB;
-when it is full, new saves stop and a warning appears. Existing clips are kept.
-Delete unwanted saved clips to make room. At the current audio format,
+Saved clips expire ONE HOUR after their original save time, including Approved
+clips. Cleanup runs about every 30 seconds while the app is open, before saving,
+and at startup. If the app is closed, expired clips are removed when reopened.
+The audio storage budget is 2 GB. At the limit, new saves stop and a warning
+appears; saving resumes when expiry or deletion makes room. Exported copies
+are not part of automatic expiry. Do not use the library as permanent storage. At the current audio format,
 a five-second clip uses about 1.9 MB. Busy sessions can create many clips.
 The screen shows pending/approved counts, used space and unsaved/skipped clips.
 Known analysis gaps or a slow/full disk can prevent an event from being saved.

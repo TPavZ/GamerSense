@@ -72,6 +72,36 @@ public static class EventLibraryChecks
             }
             using (var limited = new EventLibrary(quotaRoot))
                 if (limited.List().Length != 1 || Directory.EnumerateFiles(quotaRoot, "*.tmp").Any()) throw new Exception("Storage budget removed existing clip or committed partial save");
+            DateTime testTime = new(2026, 10, 5, 12, 0, 0, DateTimeKind.Utc);
+            string expiryRoot = Path.Combine(root, "expiry");
+            SavedEvent approved;
+            using (var expiring = new EventLibrary(expiryRoot, frozen!.Audio.Length + 256, utcNow: () => testTime))
+            {
+                var first = expiring.SaveNow(frozen);
+                approved = expiring.Review(first, "gunfire", "Keep", "approved", 0, 2, true);
+                testTime = testTime.AddMinutes(59).AddSeconds(59);
+                if (expiring.ExpireOldClips() != 0 || expiring.List().Length != 1) throw new Exception("Clip expired before one hour");
+                bool full = false;
+                try { expiring.SaveNow(frozen); } catch (IOException) { full = true; }
+                if (!full || expiring.List().Length != 1) throw new Exception("Full library evicted unexpired clip");
+                testTime = testTime.AddSeconds(1);
+                // Save reclaims expired audio first, then resumes within budget.
+                var resumed = expiring.SaveNow(frozen);
+                if (expiring.List().Length != 1 || expiring.List()[0].Id != resumed.Id ||
+                    File.Exists(Path.Combine(expiryRoot, approved.Id + ".wav")) || File.Exists(Path.Combine(expiryRoot, approved.Id + ".json")))
+                    throw new Exception("One-hour approved expiry or storage resume failed");
+            }
+            testTime = testTime.AddHours(1);
+            using (var restarted = new EventLibrary(expiryRoot, utcNow: () => testTime))
+            {
+                restarted.ExpireOldClips();
+                if (restarted.List().Length != 0 || Directory.EnumerateFiles(expiryRoot, "*.wav").Any()) throw new Exception("Expired clips survived app restart");
+                var pending = restarted.SaveNow(frozen);
+                testTime = testTime.AddHours(1);
+                bool expiredLoad = false;
+                try { restarted.Load(pending); } catch (InvalidOperationException) { expiredLoad = true; }
+                if (!expiredLoad || restarted.List().Length != 0) throw new Exception("Expired clip loaded from cache");
+            }
             // A slow/unavailable disk must never block the producer. Hold the
             // storage lock to simulate a worker stalled in a file operation.
             using (var pressured = new EventLibrary(Path.Combine(root, "pressure"), queueCapacity: 1))
@@ -86,6 +116,11 @@ public static class EventLibraryChecks
             }
             Console.WriteLine("PASS saved event library: post-context freeze, native bytes, ring expiry/restart, pending/approval/tags/range, discard, stop tail, gap rejection, storage budget, nonblocking bounded disk queue");
         }
-        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+        finally
+        {
+            if (!Path.GetFullPath(root).StartsWith(Path.GetFullPath(AppContext.BaseDirectory), StringComparison.OrdinalIgnoreCase))
+                throw new Exception("Test cleanup escaped workspace");
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+        }
     }
 }

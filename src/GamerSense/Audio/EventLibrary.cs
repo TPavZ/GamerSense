@@ -26,12 +26,14 @@ public sealed record SavedEvent
 }
 
 // Disk work has its own bounded worker. Clip producers never wait for storage.
-// Each JSON file is the commit record for an immutable WAV. No automatic expiry.
+// Each JSON file is the commit record for an immutable WAV. One-hour retention.
 public sealed class EventLibrary : IDisposable
 {
     public static string DefaultDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GamerSense", "SavedEvents");
     public string DirectoryPath { get; }
     public long MaxAudioBytes { get; }
+    public static TimeSpan Retention => TimeSpan.FromHours(1);
+    private readonly Func<DateTime> _utcNow;
     private readonly Channel<EventClip> _queue;
     private readonly Thread _worker;
     private readonly object _gate = new();
@@ -45,10 +47,11 @@ public sealed class EventLibrary : IDisposable
     public long Skipped => Interlocked.Read(ref _skipped);
     public int PendingWrites => Volatile.Read(ref _pending);
     public string LastError => Volatile.Read(ref _lastError);
-    public EventLibrary(string? directory = null, long maxAudioBytes = 2L * 1024 * 1024 * 1024, int queueCapacity = 32)
+    public EventLibrary(string? directory = null, long maxAudioBytes = 2L * 1024 * 1024 * 1024, int queueCapacity = 32, Func<DateTime>? utcNow = null)
     {
         if (maxAudioBytes <= 0 || queueCapacity <= 0) throw new ArgumentOutOfRangeException();
         DirectoryPath = Path.GetFullPath(directory ?? DefaultDirectory); MaxAudioBytes = maxAudioBytes;
+        _utcNow = utcNow ?? (() => DateTime.UtcNow);
         _queue = Channel.CreateBounded<EventClip>(new BoundedChannelOptions(queueCapacity)
         { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
         _worker = new Thread(Run) { IsBackground = true, Name = "GamerSense event saves", Priority = ThreadPriority.BelowNormal };
@@ -67,13 +70,48 @@ public sealed class EventLibrary : IDisposable
     }
     private void Run()
     {
-        while (_queue.Reader.WaitToReadAsync().AsTask().GetAwaiter().GetResult())
+        TryExpire();
+        var ready = _queue.Reader.WaitToReadAsync().AsTask();
+        while (true)
+        {
+            // Reuse the same pending channel wait during quiet sessions.
+            if (!ready.Wait(TimeSpan.FromSeconds(30))) { TryExpire(); continue; }
+            if (!ready.GetAwaiter().GetResult()) break;
             while (_queue.Reader.TryRead(out var clip))
             {
                 try { SaveNow(clip); }
                 catch (Exception ex) { ReportSkipped("Clip not saved: " + ex.Message); }
                 finally { Interlocked.Decrement(ref _pending); }
             }
+            TryExpire();
+            ready = _queue.Reader.WaitToReadAsync().AsTask();
+        }
+    }
+    private void TryExpire()
+    {
+        try { ExpireOldClips(); }
+        catch (Exception ex) { Volatile.Write(ref _lastError, "Expired clip cleanup failed: " + ex.Message); Interlocked.Increment(ref _revision); }
+    }
+    public int ExpireOldClips()
+    {
+        lock (_gate)
+        {
+            int removed = 0;
+            foreach (var item in List().Where(x => _utcNow() - x.CreatedUtc >= Retention))
+            {
+                // GUID validation keeps every delete inside the library root.
+                Delete(item); removed++;
+            }
+            return removed;
+        }
+    }
+    private void CheckFresh(SavedEvent item)
+    {
+        if (_utcNow() - item.CreatedUtc >= Retention)
+        {
+            Delete(item);
+            throw new InvalidOperationException("This saved clip has expired after one hour. Export useful clips before they expire.");
+        }
     }
     private string PathFor(string id, string extension)
     {
@@ -91,10 +129,11 @@ public sealed class EventLibrary : IDisposable
         lock (_gate)
         {
             Directory.CreateDirectory(DirectoryPath);
+            ExpireOldClips();
             long used = Directory.EnumerateFiles(DirectoryPath, "*.wav").Sum(p => new FileInfo(p).Length);
             if (used + clip.Audio.LongLength + 256 > MaxAudioBytes)
-                throw new IOException("Saved clips reached the storage budget. Export/delete unwanted clips to make room; existing clips are kept.");
-            var item = new SavedEvent { Id = Guid.NewGuid().ToString("N"), CreatedUtc = DateTime.UtcNow,
+                throw new IOException("Saved clips reached the 2 GB budget. New saves pause until clips expire or you delete them.");
+            var item = new SavedEvent { Id = Guid.NewGuid().ToString("N"), CreatedUtc = _utcNow(),
                 SourceName = clip.SourceName, SessionId = clip.SessionId, StartSeconds = clip.StartSeconds, EndSeconds = clip.EndSeconds,
                 Marker = clip.Marker, RangeEnd = clip.EndSeconds - clip.StartSeconds, AudioBytes = clip.Audio.LongLength };
             string wav = PathFor(item.Id, ".wav");
@@ -106,6 +145,7 @@ public sealed class EventLibrary : IDisposable
             }
             catch { File.Delete(wav + ".tmp"); File.Delete(wav); File.Delete(PathFor(item.Id, ".json.tmp")); throw; }
             _items?.Add(item.Id, item);
+            Volatile.Write(ref _lastError, "");
             Interlocked.Increment(ref _revision); return item;
         }
     }
@@ -135,6 +175,7 @@ public sealed class EventLibrary : IDisposable
     {
         lock (_gate)
         {
+            CheckFresh(item);
             using var reader = new WaveFileReader(PathFor(item.Id, ".wav"));
             var bytes = new byte[checked((int)reader.Length)]; int offset = 0, count;
             while (offset < bytes.Length && (count = reader.Read(bytes, offset, bytes.Length - offset)) > 0) offset += count;
@@ -148,6 +189,7 @@ public sealed class EventLibrary : IDisposable
         {
             var path = PathFor(item.Id, ".json");
             var current = JsonSerializer.Deserialize<SavedEvent>(File.ReadAllText(path)) ?? throw new IOException("Saved clip metadata missing.");
+            CheckFresh(current);
             if (start < 0 || end <= start || end > current.EndSeconds - current.StartSeconds + .01 || !double.IsFinite(start) || !double.IsFinite(end))
                 throw new InvalidOperationException("Choose a valid review range.");
             var updated = current with { Label = label, Intent = intent, Notes = notes, RangeStart = start, RangeEnd = end, Approved = approved };

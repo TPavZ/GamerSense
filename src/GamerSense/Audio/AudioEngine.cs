@@ -30,8 +30,9 @@ public sealed class AudioEngine : IDisposable
     private MeteredPlaybackProvider? _playbackMeter;
     private string _endpointTiming = "No Windows stream settings recorded yet.\n";
     public EventMonitor? Events { get; private set; }
-    public EventLibrary SavedEvents { get; } = new();
-    public string AudioDetails => $"GamerSense v0.4.12\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
+    public EventLibrary SavedEvents { get; }
+    public AudioEngine(EventLibrary? savedEvents = null) => SavedEvents = savedEvents ?? new EventLibrary();
+    public string AudioDetails => $"GamerSense v0.4.13\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         (ActiveTiming.LowEnginePeriod ? "Low-period mode: Windows chooses capacity from its supported period; 30 ms request applies only to fallback.\n" : "") +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +

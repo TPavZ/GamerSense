@@ -54,7 +54,7 @@ public sealed class EventReviewPanel : FlowLayoutPanel
         foreach (var control in new Control[] { _before, _after, _trimStart, _trimEnd, _threshold, _label, _intent, _notes })
             control.ForeColor = Color.Black;
         Controls.Add(new Label { Text = "SAVED EVENT REVIEW", AutoSize = true, Font = new Font("Segoe UI", 16, FontStyle.Bold) });
-        Controls.Add(new Label { Text = "Spikes are saved for after the game. Unreviewed clips remain Pending.", AutoSize = true });
+        Controls.Add(new Label { Text = "Clips expire one hour after saving, including approved clips. Export to keep them.", AutoSize = true });
         var autoSave = new CheckBox { Text = "Automatically save spikes and manual marks", AutoSize = true, Checked = _library.AutoSaveEnabled };
         autoSave.CheckedChanged += (_, _) => { _library.AutoSaveEnabled = autoSave.Checked; autoSaveChanged?.Invoke(autoSave.Checked); };
         Controls.Add(autoSave);
@@ -167,7 +167,13 @@ public sealed class EventReviewPanel : FlowLayoutPanel
             if (selected is not null)
                 for (int i = 0; i < _saved.Items.Count; i++) if (((SavedEvent)_saved.Items[i]).Id == selected) _saved.SelectedIndex = i;
             _saved.EndUpdate(); _refreshingSaved = false; _libraryRevision = revision;
-            _storage.Text = $"{items.Count(x => !x.Approved)} pending • {items.Count(x => x.Approved)} approved • {items.Sum(x => x.AudioBytes) / (1024.0 * 1024):F1} MB saved. No automatic expiry. 2 GB storage budget.";
+            _storage.Text = $"{items.Count(x => !x.Approved)} pending • {items.Count(x => x.Approved)} approved • {items.Sum(x => x.AudioBytes) / (1024.0 * 1024):F1} MB saved. One-hour expiry • 2 GB limit.";
+            if (_savedItem is not null && !items.Any(x => x.Id == _savedItem.Id))
+            {
+                StopReplay(); _savedItem = null; _clip = null; _rangeGeneration++;
+                _waveform.Clip = null; _clipSpectrum.Frame = null; _waveform.Invalidate(); _clipSpectrum.Invalidate();
+                _info.Text = "The selected saved clip expired or was deleted. Select another clip.";
+            }
         }
         _saveStatus.Text = $"Waiting for disk save: {_library.PendingWrites} • Unsaved/skipped: {_library.Skipped}" +
             (_library.LastError.Length > 0 ? "\n" + _library.LastError : "");

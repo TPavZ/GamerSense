@@ -518,3 +518,25 @@ discard, stopped-session tails, gap rejection, disabled autosave, storage limits
 bounded nonblocking enqueue under simulated stalled storage, and the existing
 playback/analysis checks. The review UI was rendered and tag/approval filtering
 was exercised. Gameplay quality with autosaving still needs user testing.
+
+## v0.4.13 — one-hour retention with 2 GB stop
+
+This replaces v0.4.12's indefinite clip retention. All library clips, Pending
+and Approved, expire one hour after CreatedUtc. Tagging and approval do not
+extend that deadline. Export useful clips before expiry to keep a copy.
+Existing library clips use their original save time and are subject to this
+rule when the updated app starts.
+
+The separate storage worker checks expiry at startup, about every 30 seconds
+while idle, and before saving. If the app was closed past the deadline, clips
+are removed on next startup. Both WAV and JSON are removed. Exported copies
+are not deleted. Expired selected clips are cleared from the review UI.
+
+At the 2 GB audio budget, new saves stop with a warning; unexpired clips are
+not evicted to fit new ones. Saving resumes when expiry or manual deletion
+frees enough space. Capture/playback timing and device memory are unchanged.
+
+Clock-controlled tests verify no deletion at 59:59, deletion at 60:00 including
+approved clips, both files removed, cached reads rejected, restart cleanup,
+and resuming saves after expiry releases space without exceeding the budget.
+The existing playback, analysis and saved-review checks still pass.
