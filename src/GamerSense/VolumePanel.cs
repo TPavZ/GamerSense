@@ -20,6 +20,8 @@ public sealed class VolumePanel : FlowLayoutPanel
         Controls.Add(_enable);
         Controls.Add(new Label { Text="Preview adjusts the whole mixed section assigned to one category. Overlapping sounds change together. Brief sounds can finish before the estimate arrives. Uncertain / other audio keeps normal category volume.", AutoSize=true, MaximumSize=new Size(610,0) });
         Controls.Add(new Label { Text="Overall volume always applies. Category routing starts off each time you open the app.", AutoSize=true, MaximumSize=new Size(610,0) });
+        Controls.Add(new Label { Text="Category changes fade smoothly. 0% still mutes the whole routed section; try 70% first.", AutoSize=true, MaximumSize=new Size(610,0) });
+        Controls.Add(new Label { Text="Test balance: explosions 70%, ground / air vehicles 70%, footsteps 110%, overall 100%.", AutoSize=true, MaximumSize=new Size(610,0) });
         Controls.Add(_live);
         var values=_controls.Levels;
         AddSlider("Overall volume",values.Overall,v=>_controls.Levels with { Overall=v });

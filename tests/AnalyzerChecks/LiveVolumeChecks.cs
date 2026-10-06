@@ -24,7 +24,7 @@ public static class LiveVolumeChecks
         foreach(string category in new[]{"explosions","footsteps","ground_vehicles","air_vehicles"})
         {
             var controls=new VolumeControls { Levels=new(Overall:50,Explosions:50,Footsteps:50,GroundVehicles:50,AirVehicles:50,Enabled:true) };
-            var gain=new LiveCategoryVolumes(format,controls,()=>category);var data=Tone(2400);gain.Process(data,0,data.Length);
+            var gain=new LiveCategoryVolumes(format,controls,()=>category);var data=Tone(24000);gain.Process(data,0,data.Length);
             if(Math.Abs(BitConverter.ToSingle(data,data.Length-8)-.1f)>1e-6 || Math.Abs(BitConverter.ToSingle(data,data.Length-4)+.1f)>1e-6)
                 throw new Exception("Category/overall gain or stereo preservation failed.");
             float first=BitConverter.ToSingle(data,0);
@@ -45,13 +45,30 @@ public static class LiveVolumeChecks
         }
         var muteControls=new VolumeControls { Levels=new(Explosions:0,Enabled:true) };
         string? selected="explosions";var muteGain=new LiveCategoryVolumes(format,muteControls,()=>selected);
-        var muted=Tone(2400);muteGain.Process(muted,0,muted.Length);
+        var muted=Tone(24000);muteGain.Process(muted,0,muted.Length);
         if(BitConverter.ToSingle(muted,muted.Length-8)!=0)throw new Exception("Category mute failed.");
-        selected=null;var recovered=Tone(2400);muteGain.Process(recovered,0,recovered.Length);
+        selected=null;var recovered=Tone(24000);muteGain.Process(recovered,0,recovered.Length);
         if(BitConverter.ToSingle(recovered,recovered.Length-8)!=.4f)throw new Exception("Uncertain fallback did not return to normal.");
         muteControls.Levels=muteControls.Levels with {Enabled=false};selected="explosions";
         var bypass=Tone(2400);var untouched=bypass.ToArray();muteGain.Process(bypass,0,bypass.Length);
         if(!bypass.SequenceEqual(untouched))throw new Exception("Disabled category routing still applied category gain.");
+        var stable=new StableCategoryRoute();
+        if(stable.Update("ground_vehicles",false,0)!=null||stable.Update("ground_vehicles",false,125)!="ground_vehicles")throw new Exception("Route stabilization onset failed.");
+        if(stable.Update(null,false,250)!="ground_vehicles"||stable.Update("ground_vehicles",false,375)!="ground_vehicles")throw new Exception("One ambiguous estimate chopped the stable route.");
+        if(stable.Update(null,false,650)!=null)throw new Exception("Ambiguous hold was extended indefinitely.");
+        stable.Update("ground_vehicles",false,750);stable.Update("ground_vehicles",false,875);
+        if(stable.Update(null,true,900)!=null)throw new Exception("Clear other audio kept stale attenuation.");
+        stable.Update("explosions",false,1000);stable.Update("explosions",false,1125);stable.Reset();
+        if(stable.Category!=null)throw new Exception("Gap reset kept stabilized category.");
+        var smoothControls=new VolumeControls{Levels=new(Explosions:25,Enabled:true)};
+        selected="explosions";var smooth=new LiveCategoryVolumes(format,smoothControls,()=>selected);
+        var startFade=Tone(480);smooth.Process(startFade,0,startFade.Length);
+        if(BitConverter.ToSingle(startFade,startFade.Length-8)<.37f)throw new Exception("Detection still caused a fast audible gain drop.");
+        var settle=Tone(24000);smooth.Process(settle,0,settle.Length);selected=null;
+        var releaseFade=Tone(480);smooth.Process(releaseFade,0,releaseFade.Length);
+        if(BitConverter.ToSingle(releaseFade,releaseFade.Length-8)>.12f)throw new Exception("Category release jumped back to full mix.");
+        smoothControls.Levels=smoothControls.Levels with{Enabled=false};var off=Tone(4800);smooth.Process(off,0,off.Length);
+        if(BitConverter.ToSingle(off,off.Length-8)!=.4f)throw new Exception("Routing-off bypass did not recover promptly.");
         var loud=new VolumeControls {Levels=new(Overall:150)};var boosted=Tone(2400,.9f);var limiter=new LiveCategoryVolumes(format,loud,()=>null);
         limiter.Process(boosted,0,boosted.Length);
         if(BitConverter.ToSingle(boosted,boosted.Length-8)>1 || limiter.ClippedSamples==0)throw new Exception("Boost clipping guard/count failed.");

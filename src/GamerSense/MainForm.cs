@@ -36,7 +36,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.4.19 — Live volume routing";
+        Text = "GamerSense v0.4.20 — Live volume routing";
         using (var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("GamerSense.AppIcon.ico"))
         {
             if (iconStream is not null) { _appIcon = new System.Drawing.Icon(iconStream); Icon = _appIcon; }

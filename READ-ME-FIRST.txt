@@ -1,4 +1,4 @@
-GamerSense v0.4.19 - live category volume preview
+GamerSense v0.4.20 - smoother category volumes
 
 INSTALL
 Stop the old app. Extract the WHOLE App ZIP into a NEW folder and open
@@ -12,9 +12,10 @@ FIRST TEST
 1. Keep your clean Direct cable capture setup: game to CABLE Input;
    GamerSense input CABLE Output; true output Speakers (C6).
 2. Start playback. Open Volume controls. Leave Overall at 100%.
-3. Check Apply category volumes (preview). Start by setting Ground vehicles
-   to 70% while a vehicle engine is continuously audible. Watch the live
-   Estimated section message. Leave the other sliders at 100% for comparison.
+3. Check Apply category volumes (preview). Test with Overall 100%, Explosions
+   70%, Ground vehicles 70%, Air vehicles 70%, Footsteps 110%.
+   For a clearer comparison, adjust just one category at a time. Watch the
+   estimated section / briefly holding estimate message.
 4. Try Air vehicles, Footsteps and Explosions one at a time. Adjust down
    first; boosts above 100% can clip already loud audio. Clipped-sample
    counts appear in the status/details. 0% mutes a routed section.
@@ -28,7 +29,10 @@ refresh every 125 ms. A route needs two consecutive fresh estimates, a
 clearer separation from the runner-up, and a distance inside a conservative
 positive-training range. These are heuristics, not calibrated confidence
 or proven unknown rejection. Estimates older than 300 ms and analysis gaps
-return to normal category volume; unsupported/quiet/ambiguous audio does too.
+return smoothly to normal category volume. One ambiguous estimate briefly
+   holds the prior stable category (maximum 250 ms), so it does not flip the
+   entire mix back and forth. Clear other-category evidence or silence
+   releases that route. Gaps and stale input still expire the estimate.
 
 One estimated category controls the WHOLE currently playing mixed section.
 For example, if a section is routed as Ground vehicles, footsteps or shots
@@ -39,8 +43,11 @@ Other categories, including gunfire, reload and building, keep normal
 category gain. They still follow Overall volume. Wrong estimates can affect
 the wrong section; use the routing-off checkbox for immediate comparison.
 
-Overall and selected category percentages multiply. Gain changes ramp over
-20 ms to avoid clicks. This adds no output queue or audio lookahead: playback
+Overall and selected category percentages multiply. Category reduction fades
+in over 180 ms; recovery/boost fades over 400 ms. Overall changes remain
+responsive at 20 ms. Unchecking routing returns category gain to normal in
+80 ms, even when recovery was already underway. This adds no output queue
+or audio lookahead: playback
 does not wait for recognition. At 100% for every slider, output samples are
 byte-identical to the original passthrough, with routing on or off.
 Processing has not yet been listening-tested on your devices.
@@ -53,10 +60,20 @@ samples. Pending clips retain one-hour expiry and 2 GB temporary budget.
 Approved WAV + label pairs still export to your remembered folder, normally
 Documents\GamerSense\ApprovedClips, then leave the pending list.
 
+SPECTRUM REVIEW
+All 325 retained sound files were evaluated by native stereo frequency power.
+The separate GamerSense-spectrum-review.zip includes category energy profiles,
+six exploratory frequency bundles, source-balanced comparisons and a chart.
+Vehicles, blasts, footsteps and building sounds share substantial low-band
+energy; frequency alone cannot cleanly isolate these categories. No fixed
+band cutoffs have been added to live playback.
+
 VALIDATION
 Debug and Release builds passed with zero errors/warnings. Automated checks
 cover native unity identity across float and PCM formats; smooth stereo gain,
 overall/category/mute, disabled/unknown/stale/gap fallback, volume bounds and
+stable routing through brief uncertainty, bounded holds, independent gain
+ramps, gentle detection onset/recovery and prompt bypass during an active fade;
 boost clipping; original input retention and unchanged supply accounting.
 Existing capture, low-delay output, saved-clip and export checks passed.
 UI checks cover five default sliders, enable, saved edits, reset and review.

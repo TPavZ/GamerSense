@@ -25,8 +25,24 @@ public sealed class LiveCategoryVolumes
     private readonly Func<string?> _category;
     private readonly WaveFormat _format;
     private readonly bool _float, _supported;
-    private double _gain = 1, _target = 1, _step;
-    private int _remaining;
+    private sealed class Ramp
+    {
+        public double Value = 1, Target = 1;
+        private double _step;
+        private int _remaining;
+        public void Set(double target, int frames, bool force = false)
+        {
+            if (target == Target && !force) return;
+            Target = target; _remaining = Math.Max(1, frames); _step = (Target - Value) / _remaining;
+        }
+        public double Next()
+        {
+            if (_remaining > 0) { Value += _step; if (--_remaining == 0) Value = Target; }
+            return Value;
+        }
+    }
+    private readonly Ramp _overall = new(), _categoryGain = new();
+    private bool _wasEnabled;
     private long _clipped;
     public long ClippedSamples => Interlocked.Read(ref _clipped);
     public bool Supported => _supported;
@@ -47,18 +63,19 @@ public sealed class LiveCategoryVolumes
         if (!_supported || count == 0) return;
         if (offset < 0 || count < 0 || offset > data.Length - count || count % _format.BlockAlign != 0) throw new ArgumentException("Invalid native audio range.");
         var levels = _controls.Levels;
-        double target = levels.Overall / 100 * (levels.Enabled ? levels.Category(_category()) / 100 : 1);
-        if (target != _target)
-        {
-            _target = target; _remaining = Math.Max(1, _format.SampleRate / 50); // 20 ms click-avoidance ramp.
-            _step = (_target - _gain) / _remaining;
-        }
-        if (_gain == 1 && _target == 1) return; // Exact native-byte identity at neutral settings.
+        _overall.Set(levels.Overall / 100, _format.SampleRate / 50); // Overall remains responsive: 20 ms.
+        double categoryTarget = levels.Enabled ? levels.Category(_category()) / 100 : 1;
+        // Detection affects the mixed signal, so use slower fades to avoid
+        // chopping the entire scene on each classification change.
+        int fadeMs = !levels.Enabled ? 80 : categoryTarget < _categoryGain.Value ? 180 : 400;
+        _categoryGain.Set(categoryTarget, _format.SampleRate * fadeMs / 1000, _wasEnabled && !levels.Enabled);
+        _wasEnabled = levels.Enabled;
+        if (_overall.Value == 1 && _overall.Target == 1 && _categoryGain.Value == 1 && _categoryGain.Target == 1) return;
         int bytes = _format.BitsPerSample / 8; long clipped = 0;
         for (int frame = offset; frame < offset + count; frame += _format.BlockAlign)
         {
-            if (_remaining > 0) { _gain += _step; if (--_remaining == 0) _gain = _target; }
-            if (_gain == 1) continue;
+            double gain = _overall.Next() * _categoryGain.Next();
+            if (gain == 1) continue;
             for (int c = 0; c < _format.Channels; c++)
             {
                 int i = frame + c * bytes;
@@ -66,7 +83,7 @@ public sealed class LiveCategoryVolumes
                 { 2 => BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(i,2)) / 32768.0,
                   3 => ((data[i] | data[i+1] << 8 | data[i+2] << 16) << 8 >> 8) / 8388608.0,
                   _ => BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(i,4)) / 2147483648.0 };
-                double output = double.IsFinite(sample) ? sample * _gain : 0;
+                double output = double.IsFinite(sample) ? sample * gain : 0;
                 if (output < -1 || output > 1) clipped++;
                 output = Math.Clamp(output, -1, 1);
                 if (_float) BitConverter.TryWriteBytes(data.AsSpan(i,4), (float)output);

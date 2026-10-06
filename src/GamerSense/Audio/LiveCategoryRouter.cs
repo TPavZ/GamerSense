@@ -2,7 +2,7 @@ using NAudio.Wave;
 using System.Text.Json;
 namespace GamerSense.Audio;
 
-public sealed record LiveRoute(string? Category, string Text, long UpdatedAt);
+public sealed record LiveRoute(string? Category, string Text, long UpdatedAt, long ExpiresAt = 0);
 
 // The analysis worker fills a native ring. A separate timer ranks the latest
 // half-second without holding the ring lock or delaying the output stream.
@@ -20,12 +20,13 @@ public sealed class LiveCategoryRouter : IDisposable
     private bool _disposed;
     private long _lastInput;
     private long _lastDecisionInput;
-    private string? _previous;
+    private readonly StableCategoryRoute _stable = new();
     private LiveRoute _latest = new(null, "Category volumes off", 0);
     public LiveRoute Latest => Volatile.Read(ref _latest);
-    public string? CurrentCategory { get { var latest = Latest; return Environment.TickCount64 - latest.UpdatedAt <= 300 ? latest.Category : null; } }
+    public string? CurrentCategory { get { var latest = Latest; long now = Environment.TickCount64; return now - latest.UpdatedAt <= 300 && now <= latest.ExpiresAt ? latest.Category : null; } }
     public string Status => !_controls.Levels.Enabled ? "Category volumes off • Overall volume is active" :
-        Environment.TickCount64 - Latest.UpdatedAt > 300 ? "No recent category estimate • normal category volume" : Latest.Text;
+        Environment.TickCount64 - Latest.UpdatedAt > 300 ? "No recent category estimate • normal category volume" :
+        Latest.Category is not null && CurrentCategory is null ? "Estimate released • normal category volume" : Latest.Text;
     public LiveCategoryRouter(WaveFormat format, VolumeControls controls, string modelPath,
         Func<EventClip, EventSuggestion>? predict = null)
     {
@@ -42,7 +43,7 @@ public sealed class LiveCategoryRouter : IDisposable
     }
     public void Reset()
     {
-        lock (_gate) { _count = 0; _previous = null; _lastDecisionInput = 0; _generation++; }
+        lock (_gate) { _count = 0; _stable.Reset(); _lastDecisionInput = 0; _generation++; }
         Volatile.Write(ref _latest, new(null, "Collecting a fresh category estimate", Environment.TickCount64));
     }
     public void Tap(byte[] data, int count)
@@ -53,7 +54,7 @@ public sealed class LiveCategoryRouter : IDisposable
         lock (_gate)
         {
             if (_disposed) return;
-            if (Environment.TickCount64 - _lastInput > 300) { _count = 0; _previous = null; _generation++; }
+            if (Environment.TickCount64 - _lastInput > 300) { _count = 0; _stable.Reset(); _generation++; }
             // Oversized packets keep only the newest half-second.
             int start = Math.Max(0, count - _ring.Length);
             for (int i = start; i < count;)
@@ -76,7 +77,7 @@ public sealed class LiveCategoryRouter : IDisposable
             {
                 if (_disposed) return;
                 captured = _lastInput; generation = _generation;
-                if (_count < _ring.Length || Environment.TickCount64 - captured > 300) { _previous = null; return; }
+                if (_count < _ring.Length || Environment.TickCount64 - captured > 300) { _stable.Reset(); return; }
                 if (captured <= _lastDecisionInput) return;
                 audio = new byte[_ring.Length];
                 int tail = _ring.Length - _position;
@@ -92,12 +93,14 @@ public sealed class LiveCategoryRouter : IDisposable
             lock (_gate)
             {
                 if (_disposed || generation != _generation || !_controls.Levels.Enabled || Environment.TickCount64 - captured > 300) return;
-                string? routed = candidate is not null && candidate == _previous ? candidate : null;
-                _previous = candidate;
+                bool clearOther = best is null || candidates.Length > 1 && !suggestion.NearTie &&
+                    best.Category is not ("explosions" or "footsteps" or "ground_vehicles" or "air_vehicles") &&
+                    (candidates[1].Distance-best.Distance)/Math.Max(candidates[1].Distance,1e-9) >= .30;
+                string? routed = _stable.Update(candidate, clearOther, captured);
                 _lastDecisionInput = captured;
-                string text = routed is not null ? "Estimated section: " + best!.Label :
+                string text = routed is not null ? (candidate == routed ? "Estimated section: " : "Briefly holding estimate: ") + EventCategorizer.LabelFor(routed) :
                     best is null ? suggestion.Reason + " • normal category volume" : "Uncertain / other section • normal category volume";
-                Volatile.Write(ref _latest,new(routed,text,captured));
+                Volatile.Write(ref _latest,new(routed,text,captured,_stable.ExpiresAt));
             }
         }
         catch { Reset(); }
