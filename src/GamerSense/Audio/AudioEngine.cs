@@ -11,6 +11,8 @@ public sealed class AudioEngine : IDisposable
     private MMDeviceEnumerator? _enumerator;
     private bool _outputStarted;
     private LiveAnalyzer? _analyzer;
+    private AnalysisTap? _tap;
+    public double QueuedAudioMs => _buffer?.BufferedDuration.TotalMilliseconds ?? 0;
     public AnalysisFrame? Analysis => _analyzer?.Latest;
     private ExperimentalDetector? _detector;
     private bool _detectionEnabled = true;
@@ -28,7 +30,6 @@ public sealed class AudioEngine : IDisposable
     private const int PrebufferMs = 40;
 
     public bool IsRunning { get; private set; }
-    public event Action<float>? LevelChanged;
     public event Action<string>? Faulted;
 
     public void Start(string captureDeviceId, string outputDeviceId)
@@ -59,6 +60,10 @@ public sealed class AudioEngine : IDisposable
         _analyzer = new LiveAnalyzer(_capture.WaveFormat);
         _detector = new ExperimentalDetector(_capture.WaveFormat,
             Path.Combine(AppContext.BaseDirectory, "Models", "wardogs-model.json")) { Enabled = _detectionEnabled };
+        var analyzer = _analyzer;
+        var detector = _detector;
+        _tap = new AnalysisTap((data, count) => { analyzer.Tap(data, count); detector.Tap(data, count); },
+            () => { analyzer.Reset(); detector.Reset(); });
         _capture.StartRecording();
         IsRunning = true;
     }
@@ -71,7 +76,6 @@ public sealed class AudioEngine : IDisposable
         try
         {
             _buffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
-            LevelChanged?.Invoke(CalculatePeak(e.Buffer, e.BytesRecorded, _capture.WaveFormat));
 
             // Give the output a small amount of real audio before it begins reading.
             // Starting against an empty buffer was causing repeated starvation on
@@ -81,8 +85,7 @@ public sealed class AudioEngine : IDisposable
                 _output.Play();
                 _outputStarted = true;
             }
-            _analyzer?.Tap(e.Buffer, e.BytesRecorded);
-            _detector?.Tap(e.Buffer, e.BytesRecorded);
+            _tap?.Enqueue(e.Buffer, e.BytesRecorded);
         }
         catch (Exception ex)
         {
@@ -99,6 +102,7 @@ public sealed class AudioEngine : IDisposable
     public void Stop()
     {
         IsRunning = false;
+        Interlocked.Exchange(ref _tap, null)?.Dispose();
         _detector?.Dispose();
         _detector = null;
         _analyzer?.Dispose();
@@ -122,18 +126,6 @@ public sealed class AudioEngine : IDisposable
         _output = null;
         _buffer = null;
         _enumerator = null;
-    }
-
-    private static float CalculatePeak(byte[] data, int count, WaveFormat format)
-    {
-        if (format.Encoding != WaveFormatEncoding.IeeeFloat || format.BitsPerSample != 32)
-            return 0f;
-
-        var peak = 0f;
-        for (var i = 0; i + 3 < count; i += 4)
-            peak = Math.Max(peak, Math.Abs(BitConverter.ToSingle(data, i)));
-
-        return Math.Clamp(peak, 0f, 1f);
     }
 
     public void Dispose() => Stop();

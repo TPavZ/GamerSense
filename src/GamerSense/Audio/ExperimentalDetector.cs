@@ -18,6 +18,7 @@ public sealed class ExperimentalDetector : IDisposable
     private string _latest = "Collecting audio…";
     private readonly string? _unavailable;
     public string Latest => Volatile.Read(ref _latest);
+    public void Reset() => Interlocked.Exchange(ref _reset, 1);
     public bool Enabled
     {
         get => Volatile.Read(ref _enabled) != 0;

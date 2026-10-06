@@ -20,10 +20,11 @@ public sealed class MainForm : Form
     private readonly System.Windows.Forms.Timer _analysisTimer = new() { Interval = 50 };
     private readonly CheckBox _soundMatching = new() { Text = "Experimental Wardogs sound matching", Checked = true, AutoSize = true };
     private readonly Label _detectionText = new() { AutoSize = true, Text = "Sound matching idle" };
+    private readonly Label _queueText = new() { AutoSize = true, Text = "Queued audio: 0 ms" };
 
     public MainForm()
     {
-        Text = "GamerSense v0.3.1 — Experimental";
+        Text = "GamerSense v0.3.2 — Experimental";
         Width = 540;
         Height = 760;
         StartPosition = FormStartPosition.CenterScreen;
@@ -56,6 +57,7 @@ public sealed class MainForm : Form
         panel.Controls.Add(new Label { Text = "LIVE SPECTRUM • Hz / dBFS", AutoSize = true });
         panel.Controls.Add(_spectrum);
         panel.Controls.Add(_analysisText);
+        panel.Controls.Add(_queueText);
         panel.Controls.Add(_soundMatching);
         panel.Controls.Add(_detectionText);
         panel.Controls.Add(new Label { Text = "Weak matches show ambience/mixed audio. Audio unchanged.", AutoSize = true });
@@ -78,6 +80,7 @@ public sealed class MainForm : Form
             _spectrum.Frame = frame;
             _spectrum.Invalidate();
             _detectionText.Text = _engine.Detection;
+            _queueText.Text = $"Queued audio: {_engine.QueuedAudioMs:F0} ms";
             _meter.Value = frame is null ? 0 : Math.Clamp((int)(Math.Pow(10, frame.PeakDb / 20) * 1000), 0, 1000);
             _analysisText.Text = frame is null ? "Analyzer idle — playback unchanged" : !frame.Supported ? "Analysis unavailable for this format; playback continues" : $"Peak {frame.PeakDb:F1} | RMS {frame.RmsDb:F1} dBFS | Dominant {frame.DominantHz:F0} Hz";
         };

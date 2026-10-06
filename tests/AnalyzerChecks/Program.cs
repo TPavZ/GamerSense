@@ -113,3 +113,36 @@ try
 }
 finally { File.Delete(gatePath); }
 Console.WriteLine("PASS clear reload accepted; ambiguous and distant matches use ambience fallback");
+
+using (var entered = new ManualResetEventSlim())
+using (var release = new ManualResetEventSlim())
+{
+    int captured = -1, resets = 0;
+    using var tap = new AnalysisTap((data, count) =>
+    {
+        Interlocked.Exchange(ref captured, data[0]);
+        entered.Set(); release.Wait(1000);
+    }, () => Interlocked.Increment(ref resets), capacity: 1);
+    byte[] source = { 7, 0, 0, 0 };
+    tap.Enqueue(source, source.Length);
+    if (!entered.Wait(1000)) throw new Exception("Tap did not consume");
+    source[0] = 9;
+    try
+    {
+        var enqueue = Task.Run(() => { tap.Enqueue(new byte[] { 2 }, 1); tap.Enqueue(new byte[] { 3 }, 1); });
+        if (await Task.WhenAny(enqueue, Task.Delay(1000)) != enqueue) throw new Exception("Analysis queue blocked producer");
+        await enqueue;
+        if (captured != 7 || tap.DroppedPackets < 1) throw new Exception("Pooled buffer or bounded queue failed");
+        await Task.Delay(150); // Force the queued observer packet to become stale.
+    }
+    finally { release.Set(); }
+    long timeout = Environment.TickCount64 + 1000;
+    while (tap.DroppedPackets < 2 && Environment.TickCount64 < timeout) await Task.Delay(10);
+    if (tap.DroppedPackets < 2) throw new Exception("Stale observer packet was not dropped");
+    tap.Enqueue(new byte[] { 4 }, 1);
+    timeout = Environment.TickCount64 + 1000;
+    while (Volatile.Read(ref captured) != 4 && Environment.TickCount64 < timeout) await Task.Delay(10);
+    if (captured != 4 || resets == 0) throw new Exception("Dropped packet gap was not reset");
+    tap.Dispose(); tap.Enqueue(new byte[] { 5 }, 1);
+}
+Console.WriteLine("PASS pooled analysis queue: immutable copies, bounded backlog, nonblocking producer, stale drop, gap reset, disposal");

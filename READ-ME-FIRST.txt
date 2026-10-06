@@ -1,13 +1,16 @@
-GamerSense v0.3.1
-Run BUILD-DEBUG.bat and launch src\GamerSense\bin\Debug\net9.0-windows\GamerSense.exe.
+GamerSense v0.3.2
+Build with BUILD-DEBUG.bat, then launch the built GamerSense.exe.
 
-Weak matches now show Ambience / mixed audio. Reload matching is stricter.
-Fallback does not verify that only ambience is present; it means no clear match.
-Playback and remembered device IDs are unchanged. Matching needs 48 kHz stereo.
+Includes stricter reload rules, ambience/mixed fallback, and background sample
+decoding. The original playback buffer values remain. This is not a measured
+latency fix: use the Queued audio readout to help check for increasing backlog.
+That readout excludes device/output latency. See README.md for testing details.
 
 Developer checks: dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj
-The model and rejection rules are bundled in src/GamerSense/Models.
-validation contains corrected labels, retrospective rejection metrics, and
-new-sample registrations. c1/c2/c3 are not trained or timestamp-reviewed yet.
-See README.md for validation and limitations. Heuristic gates may miss true
-reloads; they are not calibrated confidence or an independent accuracy estimate.
+
+Retraining with Python and NumPy:
+1. Put validation/reviewed-labels.json into the extracted Wardogs-samples folder.
+2. python validation/train_live_model.py Wardogs-samples Wardogs-model-results
+3. python validation/apply_rejection.py Wardogs-model-results
+4. The gated model is Wardogs-model-results/prototype-model.json.
+No source audio is changed. New c1/c2/c3 clips remain unverified/untrained.

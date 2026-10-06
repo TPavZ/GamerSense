@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>GamerSense</AssemblyName>
     <RootNamespace>GamerSense</RootNamespace>
-    <Version>0.3.1</Version>
+    <Version>0.3.2</Version>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Models\wardogs-model.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

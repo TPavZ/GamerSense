@@ -1,5 +1,5 @@
-import pathlib,json,csv,collections,numpy as np
-out=pathlib.Path('outputs/Wardogs-v0.3.1-model')
+import pathlib,json,csv,collections,numpy as np,sys
+out=pathlib.Path(sys.argv[1]) if len(sys.argv)>1 else pathlib.Path('Wardogs-model-results')
 rows=list(csv.DictReader((out/'held-out-predictions.csv').open()))
 model=json.loads((out/'prototype-model.json').read_text())
 model['version']='0.3-conservative-experimental'
@@ -22,3 +22,4 @@ for c in model['centers']:
 with (out/'conservative-predictions.csv').open('w',newline='') as f:
     w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
 print(json.dumps(report,indent=2))
+

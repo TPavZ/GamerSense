@@ -148,3 +148,29 @@ Python/C# feature and gated-prediction parity; explicit gate tests verify clear
 reload acceptance and ambiguity/distance fallback. Real-device testing remains
 necessary. Keep the updated Models folder with the app; the old ungated model
 is rejected as incompatible rather than used with forced guesses.
+
+## v0.3.2 — move analysis decoding off the playback callback
+
+Playback still receives the captured bytes first and uses the stable 30 ms
+output-latency / 40 ms prebuffer / 200 ms buffer-capacity settings. The callback
+now only makes a pooled copy for observers. A bounded three-packet queue is
+consumed on a lower-priority background thread; sample decoding no longer runs
+on the capture callback. When the observer falls behind, only its packets are
+dropped. Packets older than 100 ms are discarded, and gaps reset the analysis
+windows. This does not discard, resample, filter, or change playback audio.
+
+The new Queued audio readout reports BufferedWaveProvider backlog in ms. It is
+not total capture-to-ear latency and excludes device and WASAPI output delay.
+Some delay from the original playback buffers remains; this change does not
+prove that user-observed lag is fixed. Real-device comparison is required.
+
+To diagnose: compare sound matching on/off; note whether lag is constant or
+increases over time, and the queued-audio reading at start and after a few
+minutes. Growing backlog suggests a playback/buffering issue rather than the
+half-second classification window, which only delays the visual readout.
+
+The ambience/mixed fallback and stricter reload rules from v0.3.1 are included.
+New queue tests verify immutable copies, bounded backlog, no waiting on a busy
+observer, stale-packet discard, discontinuity reset, and disposal. Original
+format, feature-parity, matching and rejection checks also passed. Debug and
+Release compilation passed with no warnings/errors.

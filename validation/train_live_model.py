@@ -66,7 +66,7 @@ for clip in sorted(set(clips)):
         distances={c:float(np.mean(((X[i]-mean)/scale-center)**2)) for c,center in centers.items()}
         ranked=sorted(distances,key=distances.get)
         prediction=ranked[0]
-        predictions.append(dict(clip=clip,start=rows[i]['start'],end=rows[i]['end'],label=y[i],prediction=prediction,distance=distances[prediction]))
+        predictions.append(dict(clip=clip,start=rows[i]['start'],end=rows[i]['end'],label=y[i],prediction=prediction,distance=distances[prediction],runnerUpDistance=distances[ranked[1]],margin=(distances[ranked[1]]-distances[prediction])/max(distances[ranked[1]],1e-12)))
 metrics={}
 for c in evaluated:
     tp=sum(r['label']==c and r['prediction']==c for r in predictions)
@@ -89,5 +89,6 @@ for c,m in metrics.items():lines.append(f'| {c} | {m["recordings"]} | {m["precis
 lines+=['',f'Macro F1: {report["macroF1"]:.1%}. This measures forced-choice classification on selected labeled windows only, not live gameplay accuracy.','', '## What was evaluated','', 'Each original clip was held out in turn. Adjacent windows from that clip were excluded from its training fold. Only windows fully covered by one reviewed category were included. Unlabeled audio was excluded, not treated as negative. Overlapping categories were excluded. Movement actions were grouped; air vehicle actions were grouped. Each recording contributes equally to its class prototype.','', 'These recordings may share a session or environment, so holding out clips is weaker than holding out entire sessions. A single interval can contain other sounds or pauses; results depend on the interval labels.','', '## Next data priorities','', '- Ground vehicles: more idle/driving clips from different distances and sessions.','- Movement: more own/nearby movement across surfaces, distances, and backgrounds.','- Verified quiet/background intervals and mixed combat: needed to measure false alarms and calibrate unknown rejection.','- More independently recorded examples of any category with only one clip.','', 'No category has been approved for production recognition. This baseline always picks a known category and has no calibrated confidence. It cannot separate or suppress sounds.','', '## Files','', '- prototype-model.json: feature normalization and experimental class prototypes.','- held-out-predictions.csv: every evaluated window and prediction.','- feature-windows.csv: extracted feature table.','- evaluation.json: metrics and confusion counts.','- reviewed-labels.json: corrected user labels used for this run.','- train_baseline.py: reproducible preparation/evaluation source; requires Python and NumPy, run from the original workspace with outputs/Wardogs-samples available.','']
 (OUT/'REPORT.md').write_text('\n'.join(lines))
 print(json.dumps(report,indent=2))
+
 
 

@@ -21,6 +21,10 @@ public sealed class LiveAnalyzer : IDisposable
     private bool _disposed;
     private AnalysisFrame _latest;
     public AnalysisFrame Latest => Volatile.Read(ref _latest);
+    public void Reset()
+    {
+        lock (_gate) { _count = 0; _lastInput = 0; }
+    }
 
     public LiveAnalyzer(WaveFormat format)
     {
