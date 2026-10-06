@@ -329,3 +329,14 @@ Reduced delay (test) now requests 50 ms capture instead of 100 ms Stable or
 not a target delay). Stable playback remains the default and is unchanged.
 This is a controlled timing test, not a confirmed fix for the reported
 half-second delay. Actual hardware playback latency requires user testing.
+
+## v0.4.5 — Windows stream timing diagnostics
+
+Copy audio details now includes the actual initialized capture/output buffer
+capacities, driver-reported stream latencies, and default/minimum device periods.
+These readings are retained after Stop. They are partial, overlapping indicators,
+not an end-to-end measurement. Zero reported latency is not proof of zero delay.
+The diagnostics borrow NAudio 2.2.1 private clients using reflection; failure
+reports unavailable without changing playback. Reads happen once at startup,
+not on the capture callback. Both playback profiles are unchanged from v0.4.4.
+Hardware testing is still needed to locate the reported half-second delay.

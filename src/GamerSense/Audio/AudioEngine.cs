@@ -19,14 +19,15 @@ public sealed class AudioEngine : IDisposable
     public AudioTimingProfile ActiveTiming { get; private set; } = AudioTimingProfile.Stable;
     private string _captureFormat = "Not started", _outputMixFormat = "Not started";
     private PlaybackDiagnostics? _diagnostics;
+    private string _endpointTiming = "No Windows stream settings recorded yet.\n";
     public EventMonitor? Events { get; private set; }
-    public string AudioDetails => $"GamerSense v0.4.4\nRunning now: {IsRunning}\nMode: {(ActiveTiming == AudioTimingProfile.Responsive ? "Reduced delay" : "Stable")}\n" +
+    public string AudioDetails => $"GamerSense v0.4.5\nRunning now: {IsRunning}\nMode: {(ActiveTiming == AudioTimingProfile.Responsive ? "Reduced delay" : "Stable")}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
         $"Queued audio now: {QueuedAudioMs:F1} ms\nLast capture batch: {CaptureBatchMs:F1} ms\n" +
         $"Capture format: {_captureFormat}\nOutput device mix format: {_outputMixFormat}\nMatching enabled: {DetectionEnabled}\n" +
         "Queue/batch values are partial diagnostics, not total end-to-end latency.\n\n" +
-        "PLAYBACK SESSION SUMMARY (retained after Stop)\n" + (_diagnostics?.Report() ?? "No playback session recorded yet.");
+        _endpointTiming + "\nPLAYBACK SESSION SUMMARY (retained after Stop)\n" + (_diagnostics?.Report() ?? "No playback session recorded yet.");
     public AnalysisFrame? Analysis => _analyzer?.Latest;
     private ExperimentalDetector? _detector;
     private bool _detectionEnabled = true;
@@ -43,12 +44,14 @@ public sealed class AudioEngine : IDisposable
     public void Start(string captureDeviceId, string outputDeviceId)
     {
         Stop();
+        _endpointTiming = "Windows stream settings unavailable: session startup did not complete.\n";
         ActiveTiming = LowerLatency ? AudioTimingProfile.Responsive : AudioTimingProfile.Stable;
 
         _enumerator = new MMDeviceEnumerator();
         var captureEndpoint = _enumerator.GetDevice(captureDeviceId);
         var outputEndpoint = _enumerator.GetDevice(outputDeviceId);
-        _outputMixFormat = outputEndpoint.AudioClient.MixFormat.ToString();
+        using (var mixClient = outputEndpoint.AudioClient)
+            _outputMixFormat = mixClient.MixFormat.ToString();
 
         _capture = LowerLatency ? new ResponsiveLoopbackCapture(captureEndpoint, ActiveTiming.CaptureBufferMs)
             : new WasapiLoopbackCapture(captureEndpoint);
@@ -80,6 +83,7 @@ public sealed class AudioEngine : IDisposable
         _tap = new AnalysisTap((data, count) => { analyzer.Tap(data, count); detector.Tap(data, count); events.Tap(data, count); },
             () => { analyzer.Reset(); detector.Reset(); events.MarkGap(); });
         _capture.StartRecording();
+        _endpointTiming = EndpointTimingReport.Read(_capture, _output);
         IsRunning = true;
     }
 
