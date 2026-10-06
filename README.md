@@ -540,3 +540,30 @@ Clock-controlled tests verify no deletion at 59:59, deletion at 60:00 including
 approved clips, both files removed, cached reads rejected, restart cleanup,
 and resuming saves after expiry releases space without exceeding the budget.
 The existing playback, analysis and saved-review checks still pass.
+
+## v0.4.14 — approve/export or delete
+
+The saved review queue now has two outcomes: Approve & export and Delete clip.
+Save tags, Save loaded clip for later, manual Export WAV + label, and the
+Keep/Reduce selector were removed from this flow. Choose the sound tag, add
+notes and optionally trim the range, then approve. Approval means useful
+training sample; exported playbackPreference is unspecified.
+
+The default destination is Documents/GamerSense/ApprovedClips. A folder picker
+remembers a different destination in settings; a button opens the export folder.
+The exporter stages the WAV and JSON, commits both, then deletes the source WAV
+and JSON from the temporary library. Export errors preserve the source. Unique
+stable filenames avoid overwriting earlier exports and allow an identical export
+to be reused on retry. Existing legacy-approved library items appear in the queue
+until exported or deleted. No model training or audible signal changes are made.
+
+Temporary clips retain one-hour expiry and the 2 GB stop. Exported approved clips
+are outside the temporary library and survive cleanup. The exports directory has
+no automatic size cap. Export destinations inside the temporary library are
+rejected so approvals cannot accidentally enter the expiry path.
+
+Checks verify byte-identical trimmed float32 WAVs, sound labels/notes and useful-
+sample meaning, source preservation after failed export, source removal only after
+the exported pair exists, non-overwriting names, no staging leftovers and export
+survival past temporary expiry. The review UI was rendered and its approval path
+exercised. Previous playback settings, capture modes and BUILD-DEBUG.bat remain.

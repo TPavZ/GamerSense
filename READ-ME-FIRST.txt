@@ -1,63 +1,53 @@
-GamerSense v0.4.13 - saved spike review
+GamerSense v0.4.14 - approve or delete
 
 GET STARTED
-Extract the whole ZIP into a new folder. App ZIP: open GamerSense.exe.
-Source ZIP: run BUILD-DEBUG.bat, then open the Debug build executable.
+Extract the complete ZIP into a new folder. App ZIP: open GamerSense.exe.
+Source ZIP: run BUILD-DEBUG.bat, then open the Debug executable.
 The app requires .NET 9 Desktop Runtime; building requires .NET 9 SDK.
 
-KEEP YOUR WORKING AUDIO SETTINGS
+KEEP YOUR WORKING PLAYBACK SETTINGS
 Mode: Direct cable capture (test)
 Game audio device: CABLE Output (VB-Audio Virtual Cable)
 True output: Speakers (C6)
 Game output: CABLE Input
 Windows Listen to this device: OFF
-Your existing device selections and mode are remembered.
+Your existing selections and autosave choice are remembered.
 
-WHILE PLAYING
-On Event review, leave Automatically save spikes and manual marks checked.
-Spikes and level rises are saved with 2 seconds before and 3 seconds after.
-Use Ctrl+Alt+F8 globally, or F8 while this app is focused, to mark an event.
-You can keep playing without reviewing clips immediately.
+REVIEW AFTER PLAYING
+1. Stop GamerSense playback and open Event review.
+2. Select a saved clip. Click Replay range to hear it.
+3. Choose its sound tag and optional notes; adjust the range if needed.
+4. Approve & export writes the selected range as WAV plus a verified JSON
+   label to Documents/GamerSense/ApprovedClips, then removes the temporary
+   source from the review queue. Approval means useful training sample.
+5. Delete clip discards an unwanted clip after confirmation.
+There is no Save tags or Save loaded clip for later button. No separate
+Keep/Reduce choice is required. Approval is not a playback-volume instruction.
 
-AFTER THE GAME
-1. Stop GamerSense playback.
-2. Open Event review. Select a clip in the Pending list.
-3. Use Replay range to hear it. Adjust the start/end range if useful.
-4. Choose the sound tag and Keep, Reduce or Unsure, and add optional notes.
-5. Choose Approve clip to keep it as reviewed, or Save tags to leave it Pending.
-6. Choose Delete clip for an unwanted sample; deletion asks for confirmation.
-7. Use Approved or All saved clips to return to reviewed clips.
-8. Export WAV + label exports the selected range and a JSON label when needed.
-   Pending saved clips remain unverified in exports.
-Scroll the panel if the tag/approval buttons are below the visible area.
+EXPORT FOLDER
+The selected destination appears above the saved list. Choose export folder
+changes it and remembers your choice. Open approved folder shows the exports.
+Both WAV and JSON must be exported before the source is removed. If export
+fails, the source remains available. Existing exports are not overwritten.
+Clips from the old Approved list that still exist are also shown in the queue;
+approve them again to export and remove them using this workflow.
 
-Clips remain available after Stop or an app restart until one hour after saving.
-This includes Pending and Approved clips. Approval does not reset the timer.
-Export useful clips before expiry if you want to keep them permanently. They are saved under %LOCALAPPDATA%/GamerSense/SavedEvents,
-independently of the extracted app folder. Open saved folder shows them.
-Do not move or rename library WAV/JSON pairs unless keeping your own backup.
+RETENTION
+Unexported clips still expire one hour after their original save time.
+Cleanup runs about every 30 seconds while open, before saving, and at startup.
+At the 2 GB temporary audio limit, new saves pause until space becomes free.
+Approved exports are outside the temporary library and do NOT expire.
+The exports folder can grow beyond 2 GB; that limit applies to the review queue.
 
-STORAGE AND SAVING
-Saved clips expire ONE HOUR after their original save time, including Approved
-clips. Cleanup runs about every 30 seconds while the app is open, before saving,
-and at startup. If the app is closed, expired clips are removed when reopened.
-The audio storage budget is 2 GB. At the limit, new saves stop and a warning
-appears; saving resumes when expiry or deletion makes room. Exported copies
-are not part of automatic expiry. Do not use the library as permanent storage. At the current audio format,
-a five-second clip uses about 1.9 MB. Busy sessions can create many clips.
-The screen shows pending/approved counts, used space and unsaved/skipped clips.
-Known analysis gaps or a slow/full disk can prevent an event from being saved.
-Clips saved at Stop may have a shorter tail, identified in their list entry.
-Allow a normal close to finish queued saves; forced termination may lose them.
+Automatic spikes and manual marks still save 2 seconds before/3 seconds after.
+Use Ctrl+Alt+F8 globally, or F8 while the app is focused, for manual marks.
+The live timeline/sample tools remain available under their checkbox. Loaded
+offline samples may still be replayed, but the approve/delete queue operates
+on automatically saved live clips.
 
-Show live timeline and sample tools reveals the existing 60-second live view
-and offline sample tools. Its expiry does not affect saved clips. Offline
-sample events are not auto-saved; Save loaded clip for later saves the range.
-
-Approvals and Keep/Reduce labels do not change audible playback or train the
-model automatically. This update preserves v0.4.11 capture/output settings.
-Please check audio remains clean during a normal game with autosave enabled.
-
-Validation: Debug/Release builds passed with zero warnings/errors; existing
-checks and new disk persistence/review/delete/queue/storage tests passed.
-BUILD-DEBUG.bat is retained unchanged. Live-device testing is still needed.
+Validation: Debug/Release builds passed with zero warnings/errors. Tests cover
+native trimmed WAV and labels, failed-export source retention, destination
+guards, source removal after successful export, unique filenames, and permanent
+exports surviving temporary-library expiry. Existing audio/analysis checks pass.
+The simplified screen was rendered and Approve & export exercised.
+BUILD-DEBUG.bat is unchanged. Gameplay quality still needs user testing.

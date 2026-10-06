@@ -10,7 +10,9 @@ public sealed class EventReviewPanel : FlowLayoutPanel
     private readonly Func<string?> _outputId;
     private readonly EventLibrary _library;
     private readonly ListBox _saved = new() { Width = 600, Height = 150, DisplayMember = nameof(SavedEvent.Text) };
-    private readonly ComboBox _filter = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 150 };
+    private string _exportDirectory;
+    private readonly Action<string>? _exportFolderChanged;
+    private readonly Label _exportPath = new() { AutoSize = true, MaximumSize = new Size(610, 0) };
     private readonly Label _storage = new() { AutoSize = true, MaximumSize = new Size(610, 0) };
     private readonly Label _saveStatus = new() { AutoSize = true, MaximumSize = new Size(610, 0) };
     private readonly FlowLayoutPanel _liveTools = new() { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Visible = false };
@@ -34,7 +36,6 @@ public sealed class EventReviewPanel : FlowLayoutPanel
     private readonly NumericUpDown _trimEnd = new() { Minimum = 0, Maximum = 20, DecimalPlaces = 2, Increment = .1m, Width = 90 };
     private readonly NumericUpDown _threshold = new() { Minimum = -60, Maximum = 0, Value = -18, Width = 75 };
     private readonly ComboBox _label = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
-    private readonly ComboBox _intent = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 150 };
     private readonly TextBox _notes = new() { Width = 600, PlaceholderText = "What is audible? Distance, overlap, weapon/vehicle type…" };
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 250 };
     private int _lastId = -1;
@@ -46,33 +47,32 @@ public sealed class EventReviewPanel : FlowLayoutPanel
         public string Text => $"{Marker.Seconds:F1}s • {Marker.Kind}" + (Marker.PeakDb > -100 ? $" • {Marker.PeakDb:F1} dBFS" : "") + (Expired ? " • expired" : "");
     }
     private EventMonitor? Monitor => _offline ?? _live();
-    public EventReviewPanel(Func<EventMonitor?> live, Func<bool> running, Func<string?> outputId, EventLibrary library, Action<bool>? autoSaveChanged = null)
+    public EventReviewPanel(Func<EventMonitor?> live, Func<bool> running, Func<string?> outputId, EventLibrary library, Action<bool>? autoSaveChanged = null, string? exportDirectory = null, Action<string>? exportFolderChanged = null)
     {
         _live = live; _running = running; _outputId = outputId; _library = library;
+        _exportDirectory = exportDirectory ?? ApprovedClipExporter.DefaultDirectory; _exportFolderChanged = exportFolderChanged;
         Dock = DockStyle.Fill; FlowDirection = FlowDirection.TopDown; WrapContents = false; AutoScroll = true; Padding = new Padding(20);
         _events.BackColor = Color.FromArgb(30, 34, 42); _events.ForeColor = Color.White;
-        foreach (var control in new Control[] { _before, _after, _trimStart, _trimEnd, _threshold, _label, _intent, _notes })
+        foreach (var control in new Control[] { _before, _after, _trimStart, _trimEnd, _threshold, _label, _notes })
             control.ForeColor = Color.Black;
         Controls.Add(new Label { Text = "SAVED EVENT REVIEW", AutoSize = true, Font = new Font("Segoe UI", 16, FontStyle.Bold) });
-        Controls.Add(new Label { Text = "Clips expire one hour after saving, including approved clips. Export to keep them.", AutoSize = true });
+        Controls.Add(new Label { Text = "Unreviewed clips expire after one hour. Approve exports and removes the clip.", AutoSize = true });
         var autoSave = new CheckBox { Text = "Automatically save spikes and manual marks", AutoSize = true, Checked = _library.AutoSaveEnabled };
         autoSave.CheckedChanged += (_, _) => { _library.AutoSaveEnabled = autoSave.Checked; autoSaveChanged?.Invoke(autoSave.Checked); };
         Controls.Add(autoSave);
         var savedButtons = Row();
-        _filter.Items.AddRange(new object[] { "Pending", "Approved", "All saved clips" }); _filter.SelectedIndex = 0;
-        savedButtons.Controls.Add(_filter);
         Button LibraryButton(string text, Action action) { var b = new Button { Text = text, AutoSize = true, ForeColor = Color.Black }; b.Click += (_, _) => Guard(action); savedButtons.Controls.Add(b); return b; }
         LibraryButton("Refresh saved clips", () => RefreshSaved(true));
-        LibraryButton("Open saved folder", () => { Directory.CreateDirectory(_library.DirectoryPath); System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_library.DirectoryPath) { UseShellExecute = true }); });
-        Controls.Add(savedButtons);
-        _saved.BackColor = Color.FromArgb(30, 34, 42); _saved.ForeColor = Color.White; _filter.ForeColor = Color.Black;
+        LibraryButton("Open temporary clips", () => { Directory.CreateDirectory(_library.DirectoryPath); System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_library.DirectoryPath) { UseShellExecute = true }); });
+        LibraryButton("Choose export folder", ChooseExportFolder);
+        LibraryButton("Open approved folder", () => { Directory.CreateDirectory(_exportDirectory); System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_exportDirectory) { UseShellExecute = true }); });
+        Controls.Add(savedButtons); _exportPath.Text = "Approved exports: " + _exportDirectory; Controls.Add(_exportPath);
+        _saved.BackColor = Color.FromArgb(30, 34, 42); _saved.ForeColor = Color.White;
         Controls.Add(_saved); Controls.Add(_storage); Controls.Add(_saveStatus);
         var decisions = Row();
         void Decision(string text, Action action) { var b = new Button { Text = text, AutoSize = true, ForeColor = Color.Black }; b.Click += (_, _) => Guard(action); decisions.Controls.Add(b); }
-        Decision("Save tags", () => ReviewSaved(false));
-        Decision("Approve clip", () => ReviewSaved(true));
+        Decision("Approve & export", ApproveSaved);
         Decision("Delete clip", DeleteSaved);
-        Decision("Save loaded clip for later", () => { _library.SaveNow(Range()); RefreshSaved(true); _info.Text = "Saved as Pending. Select it in the saved list to tag and approve."; });
         var showLive = new CheckBox { Text = "Show live timeline and sample tools", AutoSize = true };
         showLive.CheckedChanged += (_, _) => _liveTools.Visible = showLive.Checked;
         Controls.Add(showLive); Controls.Add(_liveTools);
@@ -96,12 +96,10 @@ public sealed class EventReviewPanel : FlowLayoutPanel
         Controls.Add(_clipSpectrum);
         var review = Row();
         _label.Items.AddRange(new object[] { "movement", "nearby footsteps", "own footsteps", "gunfire", "reload", "explosions / mortars", "air vehicle", "ground vehicle", "building / repair", "horn / alarm", "speech", "ambience", "mixed / uncertain" }); _label.SelectedIndex = 12;
-        _intent.Items.AddRange(new object[] { "Unsure", "Keep", "Reduce" }); _intent.SelectedIndex = 0;
-        review.Controls.Add(_label); review.Controls.Add(_intent);
-        var save = new Button { Text = "Export WAV + label", AutoSize = true, ForeColor = Color.Black }; save.Click += (_, _) => Guard(Save); review.Controls.Add(save); Controls.Add(review); Controls.Add(_notes); Controls.Add(decisions); Controls.Add(_info);
+        review.Controls.Add(_label);
+        Controls.Add(review); Controls.Add(_notes); Controls.Add(decisions); Controls.Add(_info);
         _events.SelectedIndexChanged += (_, _) => { if (!_rebuilding) Guard(LoadClip); };
         _saved.SelectedIndexChanged += (_, _) => { if (!_refreshingSaved) Guard(LoadSaved); };
-        _filter.SelectedIndexChanged += (_, _) => Guard(() => RefreshSaved(true));
         _timeline.MarkerSelected += marker => { for (int i = 0; i < _events.Items.Count; i++) if (((MarkerRow)_events.Items[i]).Marker.Id == marker.Id) { _events.SelectedIndex = i; break; } };
         _threshold.ValueChanged += (_, _) => { if (Monitor is not null) Monitor.PeakThresholdDb = (double)_threshold.Value; };
         _trimStart.ValueChanged += (_, _) => UpdateRange(); _trimEnd.ValueChanged += (_, _) => UpdateRange();
@@ -163,11 +161,11 @@ public sealed class EventReviewPanel : FlowLayoutPanel
             string? selected = (_saved.SelectedItem as SavedEvent)?.Id;
             var items = _library.List(force);
             _refreshingSaved = true; _saved.BeginUpdate(); _saved.Items.Clear();
-            foreach (var item in items.Where(x => _filter.SelectedIndex == 2 || x.Approved == (_filter.SelectedIndex == 1))) _saved.Items.Add(item);
+            foreach (var item in items) _saved.Items.Add(item);
             if (selected is not null)
                 for (int i = 0; i < _saved.Items.Count; i++) if (((SavedEvent)_saved.Items[i]).Id == selected) _saved.SelectedIndex = i;
             _saved.EndUpdate(); _refreshingSaved = false; _libraryRevision = revision;
-            _storage.Text = $"{items.Count(x => !x.Approved)} pending • {items.Count(x => x.Approved)} approved • {items.Sum(x => x.AudioBytes) / (1024.0 * 1024):F1} MB saved. One-hour expiry • 2 GB limit.";
+            _storage.Text = $"{items.Length} awaiting export/review • {items.Sum(x => x.AudioBytes) / (1024.0 * 1024):F1} MB saved. One-hour expiry • 2 GB limit.";
             if (_savedItem is not null && !items.Any(x => x.Id == _savedItem.Id))
             {
                 StopReplay(); _savedItem = null; _clip = null; _rangeGeneration++;
@@ -184,19 +182,28 @@ public sealed class EventReviewPanel : FlowLayoutPanel
         StopReplay(); _clip = null; _savedItem = null;
         _clip = _library.Load(item); _savedItem = item;
         _rebuilding = true; _events.ClearSelected(); _rebuilding = false;
-        _rangeGeneration++; _label.SelectedItem = item.Label; _intent.SelectedItem = item.Intent; _notes.Text = item.Notes;
+        _rangeGeneration++; _label.SelectedItem = item.Label; _notes.Text = item.Notes;
         _trimStart.Value = Math.Clamp((decimal)item.RangeStart, _trimStart.Minimum, _trimStart.Maximum);
         _trimEnd.Value = Math.Clamp((decimal)item.RangeEnd, _trimEnd.Minimum, _trimEnd.Maximum);
         _info.Text = $"Saved clip • {item.CreatedUtc.ToLocalTime():g} • {(item.Approved ? "Approved" : "Pending")}. Tag it below, adjust the range, then approve or delete.";
         UpdateRange();
     }
-    private void ReviewSaved(bool approve)
+    private void ChooseExportFolder()
+    {
+        using var dialog = new FolderBrowserDialog { Description = "Folder for approved WAV + JSON labels", UseDescriptionForTitle = true, SelectedPath = _exportDirectory };
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+        _exportDirectory = dialog.SelectedPath; _exportFolderChanged?.Invoke(_exportDirectory);
+        _exportPath.Text = "Approved exports: " + _exportDirectory;
+    }
+    private void ApproveSaved()
     {
         if (_savedItem is null) throw new InvalidOperationException("Select a saved clip first.");
-        _ = Range();
-        _savedItem = _library.Review(_savedItem, _label.Text, _intent.Text, _notes.Text, (double)_trimStart.Value, (double)_trimEnd.Value, approve || _savedItem.Approved);
-        RefreshSaved(true);
-        _info.Text = approve ? "Approved and saved. Find it in Approved or All saved clips. Keep/Reduce remains a review label." : "Tags and review range saved.";
+        StopReplay();
+        string path = ApprovedClipExporter.Approve(_library, _savedItem, Range(), _exportDirectory, _label.Text, _notes.Text);
+        _savedItem = null; _clip = null; _rangeGeneration++;
+        _waveform.Clip = null; _clipSpectrum.Frame = null; _waveform.Invalidate(); _clipSpectrum.Invalidate();
+        RefreshSaved(true); _info.Text = "Approved sample exported with its label, then removed from review: " + path;
+        if (_saved.Items.Count > 0) _saved.SelectedIndex = 0;
     }
     private void DeleteSaved()
     {
@@ -240,13 +247,6 @@ public sealed class EventReviewPanel : FlowLayoutPanel
         _info.Text = "Replaying the selected range through your true output.";
     }
     public void StopReplay() { try { _player?.Stop(); } catch { } _player?.Dispose(); _stream?.Dispose(); _devices?.Dispose(); _player = null; _stream = null; _devices = null; }
-    private void Save()
-    {
-        var clip = Range(); using var dialog = new SaveFileDialog { Filter = "WAV audio|*.wav", FileName = $"wardogs-{clip.SessionId[..8]}-event-{clip.Marker.Id}.wav", AddExtension = true, DefaultExt = "wav" };
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
-        EventMonitor.Save(clip, dialog.FileName, _label.Text, _intent.Text, _notes.Text, _savedItem?.Approved ?? true);
-        _info.Text = "Exported audio and matching JSON." + (_savedItem is { Approved: false } ? " Pending clip is marked unverified." : "") + " Keep/Reduce is a review label; no suppression is applied.";
-    }
     private void OpenSample()
     {
         if (_running()) throw new InvalidOperationException("Stop live playback before opening an offline sample.");

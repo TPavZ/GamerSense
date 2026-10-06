@@ -152,10 +152,11 @@ public sealed class EventMonitor
             return new EventClip(audio, _format, start / (double)_format.SampleRate, end / (double)_format.SampleRate, marker, _sourceName, _sessionId);
         }
     }
-    public static void Save(EventClip clip, string wavPath, string label, string intent, string notes, bool verified = true)
+    public static void Save(EventClip clip, string wavPath, string label, string intent, string notes, bool verified = true,
+        string? sampleUse = null, string? playbackPreference = null)
     {
         using (var writer = new WaveFileWriter(wavPath, clip.Format)) writer.Write(clip.Audio, 0, clip.Audio.Length);
-        var metadata = new { game = "WARDOGS", audio = Path.GetFileName(wavPath), label, intent, notes, verified,
+        var metadata = new { game = "WARDOGS", audio = Path.GetFileName(wavPath), label, intent, notes, verified, sampleUse, playbackPreference,
             sourceName = clip.SourceName, sessionId = clip.SessionId,
             labelSource = "manual event review", clipStartSessionSeconds = clip.StartSeconds, clipEndSessionSeconds = clip.EndSeconds,
             markerSessionSeconds = clip.Marker.Seconds, markerKind = clip.Marker.Kind,

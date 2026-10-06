@@ -36,7 +36,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.4.13 — Event review";
+        Text = "GamerSense v0.4.14 — Event review";
         using (var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("GamerSense.AppIcon.ico"))
         {
             if (iconStream is not null) { _appIcon = new System.Drawing.Icon(iconStream); Icon = _appIcon; }
@@ -99,7 +99,8 @@ public sealed class MainForm : Form
         _review = new EventReviewPanel(() => _engine.Events, () => _engine.IsRunning,
             () => (_output.SelectedItem as AudioDeviceInfo)?.Id == (_input.SelectedItem as AudioDeviceInfo)?.Id
                 ? null : (_output.SelectedItem as AudioDeviceInfo)?.Id, _engine.SavedEvents,
-            enabled => { _settings.AutoSaveEvents = enabled; _settings.Save(); });
+            enabled => { _settings.AutoSaveEvents = enabled; _settings.Save(); }, _settings.ApprovedExportDirectory,
+            folder => { _settings.ApprovedExportDirectory = folder; _settings.Save(); });
         var tabs = new TabControl { Dock = DockStyle.Fill, ForeColor = Color.Black };
         var playback = new TabPage("Playback") { BackColor = BackColor, ForeColor = ForeColor };
         var review = new TabPage("Event review") { BackColor = BackColor, ForeColor = ForeColor };
