@@ -153,7 +153,8 @@ public sealed class EventMonitor
         }
     }
     public static void Save(EventClip clip, string wavPath, string label, string intent, string notes, bool verified = true,
-        string? sampleUse = null, string? playbackPreference = null, EventClip? reviewedSource = null, string? sourceAudioFile = null)
+        string? sampleUse = null, string? playbackPreference = null, EventClip? reviewedSource = null, string? sourceAudioFile = null,
+        EventSuggestion? autoSuggestion = null)
     {
         using (var writer = new WaveFileWriter(wavPath, clip.Format)) writer.Write(clip.Audio, 0, clip.Audio.Length);
         var metadata = new { game = "WARDOGS", audio = Path.GetFileName(wavPath), label, intent, notes, verified, sampleUse, playbackPreference,
@@ -166,7 +167,8 @@ public sealed class EventMonitor
             reviewRangeStartClipSeconds = reviewedSource is null ? (double?)null : clip.StartSeconds - reviewedSource.StartSeconds,
             reviewRangeEndClipSeconds = reviewedSource is null ? (double?)null : clip.EndSeconds - reviewedSource.StartSeconds,
             originalClipStartSessionSeconds = reviewedSource?.StartSeconds, originalClipEndSessionSeconds = reviewedSource?.EndSeconds,
-            sourceAudioFile, selectedRangeReviewed = reviewedSource is not null };
+            sourceAudioFile, selectedRangeReviewed = reviewedSource is not null,
+            autoSuggestion, humanCorrectedSuggestion = autoSuggestion is not null && label != autoSuggestion.SuggestedLabel };
         File.WriteAllText(Path.ChangeExtension(wavPath, ".json"), JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true }));
     }
     private static float Db(float value) => Math.Clamp(20 * MathF.Log10(Math.Max(value, .00001f)), -100, 12);

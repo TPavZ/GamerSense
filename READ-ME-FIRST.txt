@@ -1,68 +1,70 @@
-GamerSense v0.4.15 - select and repeat a sound event
+GamerSense v0.4.16 - live spike capture and tentative category review
 
 GET STARTED
-Extract the entire App ZIP into a NEW folder, then open GamerSense.exe.
-Requires the .NET 9 Desktop Runtime, as before. Your saved audio-device,
-mode and export-folder settings are retained. Stop the older app first.
-Source ZIP: run BUILD-DEBUG.bat and open the resulting Debug executable.
-Building requires the .NET 9 SDK. BUILD-DEBUG.bat is unchanged.
+Stop the older app. Extract the entire App ZIP into a NEW folder and open
+GamerSense.exe. Requires the .NET 9 Desktop Runtime, as before.
+Your saved input/output devices, playback mode and export folder are kept.
+Keep your clean Direct cable capture setup: game audio to CABLE Input;
+GamerSense recording input CABLE Output; true output Speakers (C6).
+Source ZIP: .NET 9 SDK; run the unchanged BUILD-DEBUG.bat.
 
-REVIEW NEW SAVED EVENTS
-1. Stop game playback in GamerSense and open Event review.
-2. Select a saved clip. The waveform shows the WHOLE clip.
-3. Drag across the waveform to highlight just the sound you want to label.
-   Drag either gold boundary to refine it, or type start/end seconds.
-   Whole clip restores the complete range. The dashed line marks the
-   detected spike, which may not be the exact sound onset.
-4. Check Repeat selection, then click Replay range to listen repeatedly.
-   Stop replay ends it. Changing the selection stops replay; click Replay
-   range again to hear the revised section. Uncheck Repeat to finish the
-   current pass. Review audio uses your selected true output device.
-5. Choose a label and describe overlap/distance/type in the notes.
-6. Approve & export writes ONLY the selected native audio frames plus the
-   JSON label to your approved folder, then removes the pending clip.
-   Use Delete clip for an unwanted pending sample, after confirmation.
+LIVE MONITORING
+1. Open Captured sounds and leave Capture spikes automatically checked.
+2. Start GamerSense and play. Loud peaks and sudden level rises are flagged.
+   A frozen native WAV with approximately 2 seconds before / 3 after each
+   event is saved in the temporary library. Allow post-event audio to arrive.
+   Stop retains available shorter tails. Automatic triggers have a 2-second
+   cooldown; this is activity monitoring, not a detector of every sound.
+3. Background analysis compares short windows near each spike with the
+   combined internal profiles, then stores an UNVERIFIED category suggestion
+   and alternatives with the clip. This uses the latest reviewed examples and
+   external-source learning package. The old experimental Wardogs checkbox
+   and wording have been removed. Suggestions run internally for captures.
+4. Watch the captured count and processing status; F8 still marks manually.
+   Lower the loud-peak threshold for more sensitivity, raise it for fewer
+   peak triggers. Sudden level-rise triggers still operate independently.
 
-REFINE YOUR EXISTING AC1 SAMPLES
-Click Open WAV for review and choose a WAV from your AC1 folder.
-The matching JSON label and notes load automatically when present.
-Drag/select/repeat to focus on the blast onset and its audible tail.
-Approve & export creates a NEW WAV + JSON pair. It keeps the original WAV
-and JSON intact, even when exporting into the same approved folder.
-Close sample leaves the original untouched. Reopen the original if you
-want to export another section with a different label.
+REVIEW AFTER PLAYING
+Stop playback, then open Captured sounds. Select a pending clip.
+Replay range plays it through your selected output. Repeat selection loops.
+The proposed category loads in the label dropdown. Close alternatives use
+mixed / uncertain. Missing/unsupported models or quiet inputs remain manual.
+These are similarity suggestions, not calibrated confidence or verified
+sound identities; overlap may produce the wrong category.
 
-Separate grenade pin/throw sounds and detonator activation from the blast.
-New labels include grenade handling / throw, detonator activation and
-chambering. Mixed / uncertain remains available for overlapping sounds.
-Do not label all five seconds as an explosion if the blast is much shorter.
-Selection means the target sound is present; it does not prove other
-categories are absent. Approval means useful training sample, not a request
-to change that category's volume.
+Focus spike selects the analyzed area. Drag the waveform or gold handles,
+or edit start/end seconds, to include the sound onset and tail. Whole clip
+restores all context. Focus and waveform selection never isolate a source.
+Correct the label and add notes about overlap, distance or sound type.
+Valid label, notes and selection edits save automatically while pending;
+switching clips or closing the app also saves valid edits.
 
-WAV imports support PCM8/16/24/32 and float32, including extensible PCM/float,
-up to 60 seconds. Original channels/sample rate and selected bytes are kept.
-Labels include selection offsets in the original clip, original session
-bounds, spike timing and the imported parent filename when applicable.
-Existing exported metadata remains compatible.
+Approve & export writes ONLY your selection as native WAV + verified label
+JSON to Documents\GamerSense\ApprovedClips (or your remembered export folder),
+then removes the temporary item. Approval means a useful training example.
+The label retains the original automatic suggestion and your correction.
+Delete clip removes unwanted pending samples after confirmation.
+Open WAV for review still lets you refine AC1 exports without changing the
+original files. Imported review creates a new export pair.
 
-PLAYBACK AND STORAGE
-The live capture/output path and timing profiles are unchanged. The loop
-provider is for stopped-game review only. No experimental learning model
-has been installed and no automatic category volume adjustment is enabled.
-Pending clips retain the one-hour expiry and 2 GB save limit. Approved
-exports remain permanent outside that temporary library. Choose export
-folder changes the remembered destination.
+STORAGE AND LEARNING
+Unreviewed clips expire ONE HOUR after capture, including while stopped.
+At the 2 GB temporary audio budget, new saves pause until space is available.
+Review promptly after a game; approved exports are permanent outside this
+temporary library. Saved corrections are future training data. This release
+does not retrain itself or learn from unapproved machine guesses.
+No automatic attenuation, category volume controls or source separation is
+enabled. The live playback callback, output implementation and timing
+profiles are preserved; classification runs on the bounded disk worker.
 
 VALIDATION
-Debug and Release builds: zero errors/warnings.
-Audio/analysis/storage/export checks pass. New tests cover frame-exact
-selection, invalid bounds, repeat wrapping and EOF, untouched originals,
-WAV + JSON reopening, selected-range provenance and safe export retries.
-UI checks exercise waveform drag, boundary refinement, numeric selection,
-repeat checkbox and approval/export/removal. The screen was rendered and
-inspected. Real device playback and listening quality still need your test.
+Debug and Release builds: zero errors/warnings. Audio, capture, analysis,
+storage, export and range checks passed, including automatic spike -> saved
+suggestion, unknown fallback, unchanged native samples, bounded background
+processing, correction persistence and approval provenance. UI checks passed
+for proposed labels, edits, waveform selection, repeat and selected export.
+Real-game classification usefulness and device listening need your test.
 
-Source checks (from the source ZIP):
+Source checks:
 dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj
 dotnet run --project tests/ReviewUiChecks/ReviewUiChecks.csproj

@@ -14,6 +14,7 @@ public sealed class AppSettings
     public bool DirectCableCapture { get; set; }
     public string? DirectCaptureDeviceId { get; set; }
     public bool AutoSaveEvents { get; set; } = true;
+    public bool AutoCategorizeEvents { get; set; } = true;
     public string? ApprovedExportDirectory { get; set; }
 
     private static string SettingsDirectory => Path.Combine(

@@ -21,7 +21,7 @@ public static class ApprovedClipExporter
         if (range.SessionId != original.SessionId || range.Marker.Id != original.Marker.Id || range.StartSeconds < original.StartSeconds ||
             range.EndSeconds > original.EndSeconds + 1.0 / range.Format.SampleRate || range.Audio.Length == 0)
             throw new InvalidOperationException("Review range does not belong to this saved clip.");
-        string wav = Export(range, target, item.Id, label, notes, original);
+        string wav = Export(range, target, item.Id, label, notes, original, suggestion: item.AutoSuggestion);
         library.Delete(item);
         return wav;
     }
@@ -34,7 +34,8 @@ public static class ApprovedClipExporter
         return Export(range, Path.GetFullPath(directory), id, label, notes, original, Path.GetFileName(sourceFile));
     }
 
-    private static string Export(EventClip range, string target, string id, string label, string notes, EventClip original, string? sourceFile = null)
+    private static string Export(EventClip range, string target, string id, string label, string notes, EventClip original, string? sourceFile = null,
+        EventSuggestion? suggestion = null)
     {
         Directory.CreateDirectory(target);
         string fingerprint = Convert.ToHexString(SHA256.HashData(range.Audio)) + "\n" + label + "\n" + notes + "\n" + range.StartSeconds.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
@@ -46,7 +47,7 @@ public static class ApprovedClipExporter
         try
         {
             string temporaryWav = Path.Combine(staging, name), temporaryJson = Path.ChangeExtension(temporaryWav, ".json");
-            EventMonitor.Save(range, temporaryWav, label, "Unspecified", notes, true, "useful training sample", "unspecified", original, sourceFile);
+            EventMonitor.Save(range, temporaryWav, label, "Unspecified", notes, true, "useful training sample", "unspecified", original, sourceFile, suggestion);
             if (File.Exists(wav) || File.Exists(json))
             {
                 if (!File.Exists(wav) || !File.Exists(json) ||

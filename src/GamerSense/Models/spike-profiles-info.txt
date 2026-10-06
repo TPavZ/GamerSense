@@ -1,0 +1,23 @@
+Combined category similarity profiles from the 235-file private research collection.
+3,424 eligible positive weak-label windows. Includes reviewed WARDOGS clips,
+real firearm/footstep examples, Sauerbraten Q009 effects, Stunt Rally effects
+and WuxiaScrub helicopter SFX. Tentative suggestions only, not source separation
+or confidence probabilities. Machine guesses are never approved labels.
+The model has not been validated for accurate cross-game recognition or gains.
+Creators/source notices and originals are retained in the learning packages.
+
+External sources:
+Free Firearm Sound Library: Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew
+Nanney. Published CC0. https://opengameart.org/content/the-free-firearm-sound-library
+Footsteps: Gbox / Mike Fozzy, CC0. https://opengameart.org/content/footsteps-0
+Sauerbraten weapon effects: Q009, CC BY-SA 3.0.
+https://opengameart.org/content/q009s-weapon-sounds
+Stunt Rally effects: various authors, published CC BY-SA 3.0; individual source
+notices preserved in the learning collection.
+https://opengameart.org/content/stunt-rally-sounds
+Helicopter effect: WuxiaScrub, CC0; real versus synthetic unspecified.
+https://opengameart.org/content/helicopter-sfx
+
+This user-specific research build ships weights, not the external waveform
+collection. No determination of trained-weight redistribution rights is made.
+Recheck rights before publishing a reusable model or public asset collection.

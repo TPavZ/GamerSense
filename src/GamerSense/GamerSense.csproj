@@ -7,11 +7,13 @@
     <Nullable>enable</Nullable>
     <AssemblyName>GamerSense</AssemblyName>
     <RootNamespace>GamerSense</RootNamespace>
-    <Version>0.4.15</Version>
+    <Version>0.4.16</Version>
     <ApplicationIcon>Assets\GamerSense.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Assets\GamerSense.ico" LogicalName="GamerSense.AppIcon.ico" />
+    <Content Include="Models\spike-profiles.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Models\spike-profiles-info.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Models\wardogs-model.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Samples\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <PackageReference Include="NAudio" Version="2.2.1" />

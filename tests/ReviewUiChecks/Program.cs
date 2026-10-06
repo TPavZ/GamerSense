@@ -8,7 +8,7 @@ class Program
  {
   string root=Path.GetFullPath("work/review-ui-v0415-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
   Application.SetHighDpiMode(HighDpiMode.DpiUnaware); Application.EnableVisualStyles();
-  using var library=new EventLibrary(Path.Combine(root,"library"));
+  using var library=new EventLibrary(Path.Combine(root,"library"), categorizer: _ => new EventSuggestion { SuggestedLabel="gunfire", Alternatives=[new("gunfire","gunfire",1)], WindowsAnalyzed=1 });
   var format=WaveFormat.CreateIeeeFloatWaveFormat(48000,2); var bytes=new byte[format.AverageBytesPerSecond*5];
   for(int frame=0;frame<48000*5;frame++){float gain=frame>90000&&frame<115000?.8f:.05f; float sample=gain*MathF.Sin(frame*.065f); BitConverter.GetBytes(sample).CopyTo(bytes,frame*8); BitConverter.GetBytes(sample*.8f).CopyTo(bytes,frame*8+4);}
   var saved=library.SaveNow(new EventClip(bytes,format,10,15,new AudioMarker(1,12,"Loud spike",-8),"test","test-ui"));
@@ -16,6 +16,7 @@ class Program
   var review=new EventReviewPanel(()=>null,()=>false,()=>null,library,exportDirectory:Path.Combine(root,"exports"));form.Controls.Add(review); form.Show(); Application.DoEvents();
   T Field<T>(string name)=>(T)typeof(EventReviewPanel).GetField(name,BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(review)!;
   var list=Field<ListBox>("_saved");list.SelectedIndex=0;Application.DoEvents();
+  if(Field<ComboBox>("_label").Text!="gunfire" || !Field<Label>("_suggestionInfo").Text.Contains("unverified")) throw new Exception("Suggested label/review status missing.");
   var waveform=Field<ClipWaveform>("_waveform");
   void Mouse(string name,int x)=>typeof(ClipWaveform).GetMethod(name,BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(waveform,new object[]{new MouseEventArgs(MouseButtons.Left,1,x,40,0)});
   Mouse("OnMouseDown",210); Mouse("OnMouseMove",300); Mouse("OnMouseUp",300); Application.DoEvents();
@@ -25,6 +26,9 @@ class Program
   if(Math.Abs((double)last.Value-5*330.0/599)>.002)throw new Exception("End handle did not refine selection.");
   Field<ComboBox>("_label").SelectedItem="explosions / mortars";Field<TextBox>("_notes").Text="Grenade blast: selected onset and tail; movement excluded.";
   Field<CheckBox>("_repeat").Checked=true;
+  review.FlushPendingEdits();
+  var draft=library.List().Single();
+  if(!draft.HasManualEdits || draft.Approved || draft.Label!="explosions / mortars" || draft.AutoSuggestion?.SuggestedLabel!="gunfire")throw new Exception("Review corrections were not stored separately from the guess.");
   review.AutoScrollPosition=new Point(0,10000);Application.DoEvents();
   using(var image=new Bitmap(700,900)){review.DrawToBitmap(image,new Rectangle(0,0,700,900));image.Save(Path.Combine(root,"review-selection.png"));}
   IEnumerable<Button> Buttons(Control c){foreach(Control child in c.Controls){if(child is Button b)yield return b;foreach(var nested in Buttons(child))yield return nested;}}

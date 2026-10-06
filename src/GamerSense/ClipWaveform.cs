@@ -90,6 +90,6 @@ public sealed class ClipWaveform : Control
         double marker = Clip.Marker.Seconds - Clip.StartSeconds;
         if (marker >= 0 && marker <= Duration) { using var eventPen = new Pen(Color.Silver) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash }; e.Graphics.DrawLine(eventPen, X(marker), 0, X(marker), Height - 27); }
         if (Playhead is double position) { using var head = new Pen(Color.White, 2); e.Graphics.DrawLine(head, X(position), 0, X(position), Height - 27); }
-        e.Graphics.DrawString($"0s    Selected {RangeStart:F3}–{RangeEnd:F3}s ({Math.Max(0, RangeEnd - RangeStart):F3}s)    Clip {Duration:F3}s", Font, text, 0, Height - 24);
+        e.Graphics.DrawString($"0s    Selected {RangeStart:F3}â€“{RangeEnd:F3}s ({Math.Max(0, RangeEnd - RangeStart):F3}s)    Clip {Duration:F3}s", Font, text, 0, Height - 24);
     }
 }

@@ -17,12 +17,14 @@ public sealed record SavedEvent
     public string Intent { get; init; } = "Unsure";
     public string Notes { get; init; } = "";
     public bool Approved { get; init; }
+    public bool HasManualEdits { get; init; }
+    public EventSuggestion? AutoSuggestion { get; init; }
     public double RangeStart { get; init; }
     public double RangeEnd { get; init; }
     public long AudioBytes { get; init; }
     public bool PostContextComplete => EndSeconds >= Marker.Seconds + 3;
     [System.Text.Json.Serialization.JsonIgnore]
-    public string Text => $"{CreatedUtc.ToLocalTime():MM/dd HH:mm:ss} • {(Approved ? "Approved" : "Pending")} • {Label} • {Marker.Kind}" + (PostContextComplete ? "" : " • short tail");
+    public string Text => $"{CreatedUtc.ToLocalTime():MM/dd HH:mm:ss} • {(Approved ? "Approved" : HasManualEdits ? "Edited" : "Pending")} • {(HasManualEdits || Approved ? Label : AutoSuggestion?.Text ?? Label)} • {Marker.Kind}" + (PostContextComplete ? "" : " • short tail");
 }
 
 // Disk work has its own bounded worker. Clip producers never wait for storage.
@@ -42,16 +44,26 @@ public sealed class EventLibrary : IDisposable
     private long _revision, _skipped;
     private int _pending, _disposed, _enabled = 1;
     private string _lastError = "";
+    private readonly Func<EventClip, EventSuggestion>? _categorizer;
+    private int _categorize = 1;
+    private long _captured;
+    private EventSuggestion? _latestSuggestion;
+    public bool CategorizeEnabled { get => Volatile.Read(ref _categorize) != 0; set => Volatile.Write(ref _categorize, value ? 1 : 0); }
+    public long Captured => Interlocked.Read(ref _captured);
+    public string CaptureStatus => !AutoSaveEnabled ? "Automatic spike capture off" :
+        $"Captured {Captured} this run • {PendingWrites} awaiting processing" + (Volatile.Read(ref _latestSuggestion) is { } s ? "\nLast capture: " + s.Text : "\nListening for spikes and sudden level rises");
     public bool AutoSaveEnabled { get => Volatile.Read(ref _enabled) != 0; set => Volatile.Write(ref _enabled, value ? 1 : 0); }
     public long Revision => Interlocked.Read(ref _revision);
     public long Skipped => Interlocked.Read(ref _skipped);
     public int PendingWrites => Volatile.Read(ref _pending);
     public string LastError => Volatile.Read(ref _lastError);
-    public EventLibrary(string? directory = null, long maxAudioBytes = 2L * 1024 * 1024 * 1024, int queueCapacity = 32, Func<DateTime>? utcNow = null)
+    public EventLibrary(string? directory = null, long maxAudioBytes = 2L * 1024 * 1024 * 1024, int queueCapacity = 32, Func<DateTime>? utcNow = null,
+        Func<EventClip, EventSuggestion>? categorizer = null)
     {
         if (maxAudioBytes <= 0 || queueCapacity <= 0) throw new ArgumentOutOfRangeException();
         DirectoryPath = Path.GetFullPath(directory ?? DefaultDirectory); MaxAudioBytes = maxAudioBytes;
         _utcNow = utcNow ?? (() => DateTime.UtcNow);
+        _categorizer = categorizer;
         _queue = Channel.CreateBounded<EventClip>(new BoundedChannelOptions(queueCapacity)
         { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
         _worker = new Thread(Run) { IsBackground = true, Name = "GamerSense event saves", Priority = ThreadPriority.BelowNormal };
@@ -126,6 +138,14 @@ public sealed class EventLibrary : IDisposable
     }
     public SavedEvent SaveNow(EventClip clip)
     {
+        // Never classify under the storage lock or on the capture callback.
+        EventSuggestion? suggestion = null;
+        if (!CategorizeEnabled) suggestion = new() { Reason = "Category suggestions off; clip saved for manual review" };
+        else if (_categorizer is not null)
+        {
+            try { suggestion = _categorizer(clip); }
+            catch { suggestion = new() { Reason = "Category suggestion failed; clip saved for manual review" }; }
+        }
         lock (_gate)
         {
             Directory.CreateDirectory(DirectoryPath);
@@ -135,7 +155,7 @@ public sealed class EventLibrary : IDisposable
                 throw new IOException("Saved clips reached the 2 GB budget. New saves pause until clips expire or you delete them.");
             var item = new SavedEvent { Id = Guid.NewGuid().ToString("N"), CreatedUtc = _utcNow(),
                 SourceName = clip.SourceName, SessionId = clip.SessionId, StartSeconds = clip.StartSeconds, EndSeconds = clip.EndSeconds,
-                Marker = clip.Marker, RangeEnd = clip.EndSeconds - clip.StartSeconds, AudioBytes = clip.Audio.LongLength };
+                Marker = clip.Marker, RangeEnd = clip.EndSeconds - clip.StartSeconds, AudioBytes = clip.Audio.LongLength, AutoSuggestion = suggestion };
             string wav = PathFor(item.Id, ".wav");
             try
             {
@@ -146,6 +166,7 @@ public sealed class EventLibrary : IDisposable
             catch { File.Delete(wav + ".tmp"); File.Delete(wav); File.Delete(PathFor(item.Id, ".json.tmp")); throw; }
             _items?.Add(item.Id, item);
             Volatile.Write(ref _lastError, "");
+            Volatile.Write(ref _latestSuggestion, suggestion); Interlocked.Increment(ref _captured);
             Interlocked.Increment(ref _revision); return item;
         }
     }
@@ -192,7 +213,7 @@ public sealed class EventLibrary : IDisposable
             CheckFresh(current);
             if (start < 0 || end <= start || end > current.EndSeconds - current.StartSeconds + .01 || !double.IsFinite(start) || !double.IsFinite(end))
                 throw new InvalidOperationException("Choose a valid review range.");
-            var updated = current with { Label = label, Intent = intent, Notes = notes, RangeStart = start, RangeEnd = end, Approved = approved };
+            var updated = current with { Label = label, Intent = intent, Notes = notes, RangeStart = start, RangeEnd = end, Approved = approved, HasManualEdits = true };
             WriteMetadata(updated); if (_items is not null) _items[item.Id] = updated;
             Interlocked.Increment(ref _revision); return updated;
         }

@@ -340,3 +340,4 @@ Console.WriteLine("PASS offline vehicle demo: decoding, activity markers, durati
 EventLibraryChecks.Run();
 ApprovalExportChecks.Run();
 ReviewRangeChecks.Run();
+EventCategorizerChecks.Run();

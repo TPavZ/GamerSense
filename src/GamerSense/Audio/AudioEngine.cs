@@ -31,24 +31,24 @@ public sealed class AudioEngine : IDisposable
     private string _endpointTiming = "No Windows stream settings recorded yet.\n";
     public EventMonitor? Events { get; private set; }
     public EventLibrary SavedEvents { get; }
-    public AudioEngine(EventLibrary? savedEvents = null) => SavedEvents = savedEvents ?? new EventLibrary();
-    public string AudioDetails => $"GamerSense v0.4.15\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
+    public AudioEngine(EventLibrary? savedEvents = null) => SavedEvents = savedEvents ?? new EventLibrary(categorizer:
+        new EventCategorizer(Path.Combine(AppContext.BaseDirectory, "Models", "spike-profiles.json")).Categorize);
+    public string AudioDetails => $"GamerSense v0.4.16\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         (ActiveTiming.LowEnginePeriod ? "Low-period mode: Windows chooses capacity from its supported period; 30 ms request applies only to fallback.\n" : "") +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
         $"Queued audio now: {QueuedAudioMs:F1} ms\nLast capture batch: {CaptureBatchMs:F1} ms\n" +
-        $"Capture route: {_captureRoute}\nCapture format: {_captureFormat}\nOutput device mix format: {_outputMixFormat}\nMatching enabled: {DetectionEnabled}\n" +
+        $"Capture route: {_captureRoute}\nCapture format: {_captureFormat}\nOutput device mix format: {_outputMixFormat}\nCaptured-sound suggestions enabled: {DetectionEnabled}\n" +
         "Queue/batch values are partial diagnostics, not total end-to-end latency.\n\n" +
         _endpointTiming + "\n" + (_leanOutput?.Report() ?? _leanReport) + "\n" + (_playbackMeter?.Report() ?? "No playback supply readings yet.\n") +
         "\nPLAYBACK SESSION SUMMARY (retained after Stop)\n" + (_diagnostics?.Report() ?? "No playback session recorded yet.");
     public AnalysisFrame? Analysis => _analyzer?.Latest;
-    private ExperimentalDetector? _detector;
     private bool _detectionEnabled = true;
-    public string Detection => _detector?.Latest ?? "Sound matching idle";
+    public string Detection => SavedEvents.CaptureStatus;
     public bool DetectionEnabled
     {
         get => _detectionEnabled;
-        set { _detectionEnabled = value; if (_detector is not null) _detector.Enabled = value; }
+        set { _detectionEnabled = value; SavedEvents.CategorizeEnabled = value; }
     }
 
     public bool IsRunning { get; private set; }
@@ -107,15 +107,13 @@ public sealed class AudioEngine : IDisposable
 
         _outputStarted = false;
         _analyzer = new LiveAnalyzer(_capture.WaveFormat);
-        _detector = new ExperimentalDetector(_capture.WaveFormat,
-            Path.Combine(AppContext.BaseDirectory, "Models", "wardogs-model.json")) { Enabled = _detectionEnabled };
+        SavedEvents.CategorizeEnabled = _detectionEnabled;
         var analyzer = _analyzer;
-        var detector = _detector;
         var events = Events = new EventMonitor(_capture.WaveFormat);
         events.ClipReady += SavedEvents.Enqueue;
         events.ClipSkipped += SavedEvents.ReportSkipped;
-        _tap = new AnalysisTap((data, count) => { analyzer.Tap(data, count); detector.Tap(data, count); events.Tap(data, count); },
-            () => { analyzer.Reset(); detector.Reset(); events.MarkGap(); });
+        _tap = new AnalysisTap((data, count) => { analyzer.Tap(data, count); events.Tap(data, count); },
+            () => { analyzer.Reset(); events.MarkGap(); });
         _capture.StartRecording();
         _endpointTiming = EndpointTimingReport.Read(_capture, (object?)_leanOutput ?? _output!) +
             $"Capture scheduling: {(DirectCableCapture || (ActiveTiming != AudioTimingProfile.Stable && ResponsiveLoopbackCapture.UsesEventSync) ? "Windows audio events" : "Polling")}\n";
@@ -162,8 +160,6 @@ public sealed class AudioEngine : IDisposable
         Volatile.Write(ref _captureBatchMs, 0);
         Interlocked.Exchange(ref _tap, null)?.Dispose();
         Events?.CompletePending(true);
-        _detector?.Dispose();
-        _detector = null;
         _analyzer?.Dispose();
         _analyzer = null;
         _outputStarted = false;

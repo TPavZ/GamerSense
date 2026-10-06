@@ -18,8 +18,7 @@ public sealed class MainForm : Form
     private readonly SpectrumView _spectrum = new();
     private readonly Label _analysisText = new() { AutoSize = true, Text = "Analyzer ready — playback unchanged" };
     private readonly System.Windows.Forms.Timer _analysisTimer = new() { Interval = 50 };
-    private readonly CheckBox _soundMatching = new() { Text = "Experimental Wardogs sound matching", Checked = true, AutoSize = true };
-    private readonly Label _detectionText = new() { AutoSize = true, Text = "Sound matching idle" };
+    private readonly Label _detectionText = new() { AutoSize = true, Text = "Automatic spike monitor ready" };
     private readonly Label _queueText = new() { AutoSize = true, Text = "Queued audio: 0 ms" };
     private readonly ComboBox _playbackMode = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 430 };
     private readonly Label _captureText = new() { AutoSize = true, Text = "Capture batch: 0 ms" };
@@ -36,7 +35,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.4.15 — Event review";
+        Text = "GamerSense v0.4.16 — Live monitoring";
         using (var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("GamerSense.AppIcon.ico"))
         {
             if (iconStream is not null) { _appIcon = new System.Drawing.Icon(iconStream); Icon = _appIcon; }
@@ -78,6 +77,7 @@ public sealed class MainForm : Form
         _engine.RealTimeRefill = _settings.RealTimeRefill;
         _engine.DirectCableCapture = _settings.DirectCableCapture;
         _engine.SavedEvents.AutoSaveEnabled = _settings.AutoSaveEvents;
+        _engine.DetectionEnabled = true;
         panel.Controls.Add(_playbackMode);
         panel.Controls.Add(new Label { Text = "LIVE AUDIO", AutoSize = true });
         panel.Controls.Add(_meter);
@@ -86,9 +86,8 @@ public sealed class MainForm : Form
         panel.Controls.Add(_analysisText);
         panel.Controls.Add(_queueText);
         panel.Controls.Add(_captureText);
-        panel.Controls.Add(_soundMatching);
         panel.Controls.Add(_detectionText);
-        panel.Controls.Add(new Label { Text = "Weak matches show ambience/mixed audio. Audio unchanged.", AutoSize = true });
+        panel.Controls.Add(new Label { Text = "Tentative labels appear in Captured sounds. Replay and correct them before approval.", AutoSize = true });
 
         var buttons = new FlowLayoutPanel { AutoSize = true };
         buttons.Controls.Add(_start);
@@ -103,7 +102,7 @@ public sealed class MainForm : Form
             folder => { _settings.ApprovedExportDirectory = folder; _settings.Save(); });
         var tabs = new TabControl { Dock = DockStyle.Fill, ForeColor = Color.Black };
         var playback = new TabPage("Playback") { BackColor = BackColor, ForeColor = ForeColor };
-        var review = new TabPage("Event review") { BackColor = BackColor, ForeColor = ForeColor };
+        var review = new TabPage("Captured sounds") { BackColor = BackColor, ForeColor = ForeColor };
         playback.Controls.Add(panel); review.Controls.Add(_review); tabs.TabPages.Add(playback); tabs.TabPages.Add(review); Controls.Add(tabs);
         KeyPreview = true;
         KeyDown += (_, e) => { if (e.KeyCode == Keys.F8 && !e.Control && !e.Alt) { _review.MarkLive(); e.Handled = true; } };
@@ -121,7 +120,6 @@ public sealed class MainForm : Form
         _start.Click += (_, _) => ToggleEngine();
         _input.SelectedIndexChanged += (_, _) => SaveDeviceSelections();
         _output.SelectedIndexChanged += (_, _) => SaveDeviceSelections();
-        _soundMatching.CheckedChanged += (_, _) => _engine.DetectionEnabled = _soundMatching.Checked;
         _playbackMode.SelectedIndexChanged += (_, _) =>
         {
             SaveDeviceSelections();
@@ -155,6 +153,7 @@ public sealed class MainForm : Form
         _engine.Faulted += ReportFault;
         FormClosing += (_, _) =>
         {
+            _review.FlushPendingEdits();
             SaveDeviceSelections();
             _analysisTimer.Stop();
             _analysisTimer.Dispose();
