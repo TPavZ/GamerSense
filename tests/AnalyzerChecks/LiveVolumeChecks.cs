@@ -21,9 +21,9 @@ public static class LiveVolumeChecks
             new LiveCategoryVolumes(f,new VolumeControls{Levels=new(Enabled:true)},()=>"explosions").Process(actual,0,actual.Length);
             if(!actual.SequenceEqual(original))throw new Exception("Enabled unity routing changed native bytes: "+f);
         }
-        foreach(string category in new[]{"explosions","footsteps","ground_vehicles","air_vehicles"})
+        foreach(string category in new[]{"gunfire","explosions","footsteps","ground_vehicles","air_vehicles"})
         {
-            var controls=new VolumeControls { Levels=new(Overall:50,Explosions:50,Footsteps:50,GroundVehicles:50,AirVehicles:50,Enabled:true) };
+            var controls=new VolumeControls { Levels=new(Overall:50,Explosions:50,Footsteps:50,GroundVehicles:50,AirVehicles:50,Enabled:true,Gunfire:50) };
             var gain=new LiveCategoryVolumes(format,controls,()=>category);var data=Tone(24000);gain.Process(data,0,data.Length);
             if(Math.Abs(BitConverter.ToSingle(data,data.Length-8)-.1f)>1e-6 || Math.Abs(BitConverter.ToSingle(data,data.Length-4)+.1f)>1e-6)
                 throw new Exception("Category/overall gain or stereo preservation failed.");
@@ -74,13 +74,18 @@ public static class LiveVolumeChecks
         if(BitConverter.ToSingle(boosted,boosted.Length-8)>1 || limiter.ClippedSamples==0)throw new Exception("Boost clipping guard/count failed.");
         loud.Levels=new(Overall:double.NaN,Footsteps:-1,Explosions:999);
         if(loud.Levels.Overall!=100||loud.Levels.Footsteps!=0||loud.Levels.Explosions!=150)throw new Exception("Unsafe persisted volume values accepted.");
+        var legacy=System.Text.Json.JsonSerializer.Deserialize<VolumeLevels>("{\"Explosions\":70,\"Footsteps\":110}")!;
+        if(legacy.Gunfire!=100||legacy.Explosions!=70||legacy.Footsteps!=110)throw new Exception("Legacy volumes did not retain neutral gunfire default.");
+        var saved=System.Text.Json.JsonSerializer.Deserialize<VolumeLevels>(System.Text.Json.JsonSerializer.Serialize(new VolumeLevels(Gunfire:35)))!;
+        if(saved.Gunfire!=35)throw new Exception("Gunfire setting round-trip failed.");
+        loud.Levels=new(Gunfire:double.PositiveInfinity);if(loud.Levels.Gunfire!=100)throw new Exception("Unsafe gunfire volume accepted.");
         var source=new BufferedWaveProvider(format){ReadFully=false};var raw=Tone(2400);var rawCopy=raw.ToArray();source.AddSamples(raw,0,raw.Length);
         var meter=new MeteredPlaybackProvider(source,new LiveCategoryVolumes(format,new(){Levels=new(Overall:50)},()=>null).Process);
         var rendered=new byte[raw.Length+8];meter.Read(rendered,8,raw.Length);
         if(!raw.SequenceEqual(rawCopy)||meter.AvailableFrames!=0||meter.ShortReadCount!=0||Math.Abs(BitConverter.ToSingle(rendered,rendered.Length-8)-.2f)>1e-6)
             throw new Exception("Output gain changed capture data or added buffering/supply errors.");
         string root=Path.Combine(AppContext.BaseDirectory,"route-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
-        string model=Path.Combine(root,"limits.json");File.WriteAllText(model,"{\"liveRoutingMaxDistance\":{\"explosions\":1}}");
+        string model=Path.Combine(root,"limits.json");File.WriteAllText(model,"{\"liveRoutingMaxDistance\":{\"explosions\":1,\"gunfire\":1}}");
         var settings=new VolumeControls {Levels=new(Enabled:true)};
         EventSuggestion Match(double first,double second)=>new(){SuggestedLabel="explosions / mortars",WindowsAnalyzed=1,Alternatives=[new("explosions","explosions / mortars",first),new("gunfire","gunfire",second)]};
         var result=Match(.1,.5);
@@ -91,6 +96,8 @@ public static class LiveVolumeChecks
                 var clock=Stopwatch.StartNew();while(clock.ElapsedMilliseconds<ms){router.Tap(raw,raw.Length);Thread.Sleep(30);if(done())return true;}return false;
             }
             if(!FeedUntil(()=>router.CurrentCategory=="explosions"))throw new Exception("Stable supported live category did not route.");
+            result=new(){SuggestedLabel="gunfire",WindowsAnalyzed=1,Alternatives=[new("gunfire","gunfire",.1),new("explosions","explosions / mortars",.5)]};
+            router.Reset();if(!FeedUntil(()=>router.CurrentCategory=="gunfire"))throw new Exception("Gunfire did not route as a supported category.");
             Thread.Sleep(350);if(router.CurrentCategory!=null)throw new Exception("Stale category estimate kept applying gain.");
             router.Reset();if(router.CurrentCategory!=null)throw new Exception("Analysis gap did not clear routing.");
             result=Match(.1,.11);router.Reset();FeedUntil(()=>false,650);

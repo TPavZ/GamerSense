@@ -89,12 +89,12 @@ public sealed class LiveCategoryRouter : IDisposable
             bool strong = best is not null && candidates.Length > 1 && suggestion.WindowsAnalyzed > 0 &&
                 !suggestion.NearTie && _limits.TryGetValue(best.Category,out double limit) && best.Distance <= limit &&
                 (candidates[1].Distance-best.Distance)/Math.Max(candidates[1].Distance,1e-9) >= .30;
-            string? candidate = strong && best!.Category is "explosions" or "footsteps" or "ground_vehicles" or "air_vehicles" ? best!.Category : null;
+            string? candidate = strong && best!.Category is "gunfire" or "explosions" or "footsteps" or "ground_vehicles" or "air_vehicles" ? best!.Category : null;
             lock (_gate)
             {
                 if (_disposed || generation != _generation || !_controls.Levels.Enabled || Environment.TickCount64 - captured > 300) return;
                 bool clearOther = best is null || candidates.Length > 1 && !suggestion.NearTie &&
-                    best.Category is not ("explosions" or "footsteps" or "ground_vehicles" or "air_vehicles") &&
+                    best.Category is not ("gunfire" or "explosions" or "footsteps" or "ground_vehicles" or "air_vehicles") &&
                     (candidates[1].Distance-best.Distance)/Math.Max(candidates[1].Distance,1e-9) >= .30;
                 string? routed = _stable.Update(candidate, clearOther, captured);
                 _lastDecisionInput = captured;

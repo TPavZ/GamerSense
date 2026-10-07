@@ -42,14 +42,16 @@ class Program
   volumeForm.Controls.Add(volumes);volumeForm.Show();Application.DoEvents();
   IEnumerable<Control> Descendants(Control c){foreach(Control child in c.Controls){yield return child;foreach(var nested in Descendants(child))yield return nested;}}
   var sliders=Descendants(volumes).OfType<TrackBar>().ToArray();
-  if(sliders.Length!=5||sliders.Any(x=>x.Value!=100))throw new Exception("Volume UI neutral defaults/sliders incorrect.");
+  if(sliders.Length!=6||sliders.Any(x=>x.Value!=100))throw new Exception("Volume UI neutral defaults/sliders incorrect.");
   Descendants(volumes).OfType<CheckBox>().Single().Checked=true;
   sliders.Single(x=>x.Name=="Explosions").Value=25;volumes.Flush();
   if(controls.Levels.Explosions!=25||!controls.Levels.Enabled||persisted?.Explosions!=25||controls.Levels.Overall!=100)throw new Exception("Volume slider, enable or persistence UI failed.");
+  sliders.Single(x=>x.Name=="Gunfire").Value=65;volumes.Flush();
+  if(controls.Levels.Gunfire!=65||persisted?.Gunfire!=65||controls.Levels.Footsteps!=100)throw new Exception("Gunfire slider persistence or independence failed.");
   using(var image=new Bitmap(700,820)){volumes.DrawToBitmap(image,new Rectangle(0,0,700,820));image.Save(Path.Combine(root,"volume-controls.png"));}
   Buttons(volumes).Single(b=>b.Text=="Reset all volumes to 100%").PerformClick();
-  if(sliders.Any(x=>x.Value!=100)||controls.Levels.Explosions!=100)throw new Exception("Volume reset failed.");
-  Console.WriteLine("PASS volume UI: five neutral sliders, live controls, explicit enable, saved values, reset; rendered screen saved.");
+  if(sliders.Any(x=>x.Value!=100)||controls.Levels.Explosions!=100||controls.Levels.Gunfire!=100)throw new Exception("Volume reset failed.");
+  Console.WriteLine("PASS volume UI: six neutral sliders including gunfire, live controls, explicit enable, saved values, reset; rendered screen saved.");
  }
 }
 

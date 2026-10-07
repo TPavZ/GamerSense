@@ -3,13 +3,15 @@
     "explosions": 0.4695121958139573,
     "footsteps": 0.2608461556739432,
     "ground_vehicles": 0.34495186618420526,
-    "air_vehicles": 0.19451049411967192
+    "air_vehicles": 0.19451049411967192,
+    "gunfire": 0.5177716497747142
   },
   "support": {
     "explosions": 534,
     "footsteps": 373,
     "ground_vehicles": 165,
-    "air_vehicles": 447
+    "air_vehicles": 447,
+    "gunfire": 2252
   },
   "recipe": "max(0.05, 1.5 * training positive own-profile distance p95 + 0.02)",
   "verifiedNegativesAvailable": false

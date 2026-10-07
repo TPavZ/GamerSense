@@ -1,86 +1,48 @@
-GamerSense v0.4.20 - smoother category volumes
+GamerSense v0.4.21 - gunfire volume control
 
 INSTALL
-Stop the old app. Extract the WHOLE App ZIP into a NEW folder and open
-GamerSense.exe. Requires the .NET 9 Desktop Runtime, as before.
-Source: .NET 9 SDK; BUILD-DEBUG.bat is unchanged.
-Saved audio devices, playback mode, export folder and slider values are kept.
-First use: all five sliders are 100% (normal). Category routing starts OFF
-each time you open the app, even when slider values were remembered.
+Stop the old app. Extract the whole App ZIP into a NEW folder and launch
+GamerSense.exe. Requires the .NET 9 Desktop Runtime. Source builds use the
+.NET 9 SDK and the unchanged BUILD-DEBUG.bat.
 
-FIRST TEST
-1. Keep your clean Direct cable capture setup: game to CABLE Input;
-   GamerSense input CABLE Output; true output Speakers (C6).
-2. Start playback. Open Volume controls. Leave Overall at 100%.
-3. Check Apply category volumes (preview). Test with Overall 100%, Explosions
-   70%, Ground vehicles 70%, Air vehicles 70%, Footsteps 110%.
-   For a clearer comparison, adjust just one category at a time. Watch the
-   estimated section / briefly holding estimate message.
-4. Try Air vehicles, Footsteps and Explosions one at a time. Adjust down
-   first; boosts above 100% can clip already loud audio. Clipped-sample
-   counts appear in the status/details. 0% mutes a routed section.
-5. Uncheck Apply category volumes to compare with normal category volume.
-   Overall remains active. Reset all volumes to 100% restores every slider.
+WHAT CHANGED
+Gunfire now has a separate 0-150% slider alongside Overall, Explosions,
+Footsteps, Ground vehicles and Air vehicles. 100% is normal; 0% mutes a
+routed section. Gunfire values are remembered and included in Reset all.
+Existing settings load with Gunfire at 100%, preserving other slider values.
+Category routing still starts OFF each time the app opens.
 
-WHAT THIS PREVIEW DOES
-The latest half-second of ORIGINAL incoming audio is compared to the combined
-AC1/AC2 and external-source profiles, separately from playback. Estimates
-refresh every 125 ms. A route needs two consecutive fresh estimates, a
-clearer separation from the runner-up, and a distance inside a conservative
-positive-training range. These are heuristics, not calibrated confidence
-or proven unknown rejection. Estimates older than 300 ms and analysis gaps
-return smoothly to normal category volume. One ambiguous estimate briefly
-   holds the prior stable category (maximum 250 ms), so it does not flip the
-   entire mix back and forth. Clear other-category evidence or silence
-   releases that route. Gaps and stale input still expire the estimate.
+TEST
+Keep your working Direct cable capture setup: game to CABLE Input;
+GamerSense input CABLE Output; true output Speakers (C6).
+Open Volume controls, start playback, and enable Apply category volumes.
+Leave all sliders at 100% initially. Then try Gunfire at 70%, with the others
+at 100%, while watching for Estimated section: gunfire. Sustained firing
+is a better first test than isolated shots. Toggle category volumes off to
+compare. Boosts above 100% can clip loud audio.
 
-One estimated category controls the WHOLE currently playing mixed section.
-For example, if a section is routed as Ground vehicles, footsteps or shots
-audible at the same time also change volume. This is not separate stems or
-simultaneous source separation. Brief blasts or steps may finish before a
-stable estimate arrives. Long engines are a useful first test.
-Other categories, including gunfire, reload and building, keep normal
-category gain. They still follow Overall volume. Wrong estimates can affect
-the wrong section; use the routing-off checkbox for immediate comparison.
-
-Overall and selected category percentages multiply. Category reduction fades
-in over 180 ms; recovery/boost fades over 400 ms. Overall changes remain
-responsive at 20 ms. Unchecking routing returns category gain to normal in
-80 ms, even when recovery was already underway. This adds no output queue
-or audio lookahead: playback
-does not wait for recognition. At 100% for every slider, output samples are
-byte-identical to the original passthrough, with routing on or off.
-Processing has not yet been listening-tested on your devices.
-
-CAPTURE / REVIEW
-Automatic spikes, retained clips, replay/selection, approve/export and Delete
-all pending clips remain available under Captured sounds. Captured WAVs and
-analysis use ORIGINAL pre-volume audio. Slider changes never alter training
-samples. Pending clips retain one-hour expiry and 2 GB temporary budget.
-Approved WAV + label pairs still export to your remembered folder, normally
-Documents\GamerSense\ApprovedClips, then leave the pending list.
-
-SPECTRUM REVIEW
-All 325 retained sound files were evaluated by native stereo frequency power.
-The separate GamerSense-spectrum-review.zip includes category energy profiles,
-six exploratory frequency bundles, source-balanced comparisons and a chart.
-Vehicles, blasts, footsteps and building sounds share substantial low-band
-energy; frequency alone cannot cleanly isolate these categories. No fixed
-band cutoffs have been added to live playback.
+LIMITS
+This preview changes the WHOLE mixed section classified as gunfire;
+overlapping footsteps, voices or vehicles in that section change together.
+It does not separate simultaneous sources. Short shots may finish before
+the estimate arrives. Gunfire uses the existing combined profiles with a
+distance limit derived from 2,252 positive weak-label windows, the same
+runner-up margin and two-fresh-estimate policy as other routed categories.
+Those heuristics are not calibrated confidence or validated cross-game
+accuracy. Unknown/stale/gap fallback and bounded holds remain unchanged.
+No capture/output buffer or lookahead was added. The existing smooth gain
+ramps remain in use. At all sliders 100%, output remains byte-identical.
+Captured samples, analysis and approved exports use original pre-volume
+audio. Device memory and playback timing remain unchanged.
 
 VALIDATION
-Debug and Release builds passed with zero errors/warnings. Automated checks
-cover native unity identity across float and PCM formats; smooth stereo gain,
-overall/category/mute, disabled/unknown/stale/gap fallback, volume bounds and
-stable routing through brief uncertainty, bounded holds, independent gain
-ramps, gentle detection onset/recovery and prompt bypass during an active fade;
-boost clipping; original input retention and unchanged supply accounting.
-Existing capture, low-delay output, saved-clip and export checks passed.
-UI checks cover five default sliders, enable, saved edits, reset and review.
-The volume screen was rendered and inspected.
-Actual listening quality, live category usefulness and CPU load need your
-test. These tests do not validate accurate cross-game recognition.
+Debug and Release builds: zero warnings/errors. Audio checks passed for
+native unity, stereo gain, gunfire routing, stale/unknown/off fallback,
+smooth ramps, legacy setting defaults, JSON round-trip and gain bounds.
+UI checks passed for six sliders, saved gunfire edits and reset. The rendered
+volume screen was inspected. Existing capture, review/export and low-delay
+playback checks passed. Listening quality and recognition need game testing.
 
 Source checks:
-dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj
-dotnet run --project tests/ReviewUiChecks/ReviewUiChecks.csproj
+dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj -c Release
+dotnet run --project tests/ReviewUiChecks/ReviewUiChecks.csproj -c Release

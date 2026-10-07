@@ -4,17 +4,17 @@ using System.Buffers.Binary;
 namespace GamerSense.Audio;
 
 public sealed record VolumeLevels(double Overall = 100, double Explosions = 100, double Footsteps = 100,
-    double GroundVehicles = 100, double AirVehicles = 100, bool Enabled = false)
+    double GroundVehicles = 100, double AirVehicles = 100, bool Enabled = false, double Gunfire = 100)
 {
     public double Category(string? category) => category switch
-    { "explosions" => Explosions, "footsteps" => Footsteps, "ground_vehicles" => GroundVehicles, "air_vehicles" => AirVehicles, _ => 100 };
+    { "gunfire" => Gunfire, "explosions" => Explosions, "footsteps" => Footsteps, "ground_vehicles" => GroundVehicles, "air_vehicles" => AirVehicles, _ => 100 };
 }
 public sealed class VolumeControls
 {
     private VolumeLevels _levels = new();
     public VolumeLevels Levels { get => Volatile.Read(ref _levels); set => Volatile.Write(ref _levels, Sanitize(value)); }
     private static double Clean(double v) => double.IsFinite(v) ? Math.Clamp(v, 0, 150) : 100;
-    private static VolumeLevels Sanitize(VolumeLevels v) => new(Clean(v.Overall), Clean(v.Explosions), Clean(v.Footsteps), Clean(v.GroundVehicles), Clean(v.AirVehicles), v.Enabled);
+    private static VolumeLevels Sanitize(VolumeLevels v) => new(Clean(v.Overall), Clean(v.Explosions), Clean(v.Footsteps), Clean(v.GroundVehicles), Clean(v.AirVehicles), v.Enabled, Clean(v.Gunfire));
 }
 
 // Applies one smooth gain to a recognized mixed-audio section, NOT isolated stems.

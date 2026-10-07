@@ -26,6 +26,7 @@ public sealed class VolumePanel : FlowLayoutPanel
         var values=_controls.Levels;
         AddSlider("Overall volume",values.Overall,v=>_controls.Levels with { Overall=v });
         AddSlider("Explosions",values.Explosions,v=>_controls.Levels with { Explosions=v });
+        AddSlider("Gunfire",values.Gunfire,v=>_controls.Levels with { Gunfire=v });
         AddSlider("Footsteps",values.Footsteps,v=>_controls.Levels with { Footsteps=v });
         AddSlider("Ground vehicles",values.GroundVehicles,v=>_controls.Levels with { GroundVehicles=v });
         AddSlider("Air vehicles",values.AirVehicles,v=>_controls.Levels with { AirVehicles=v });
