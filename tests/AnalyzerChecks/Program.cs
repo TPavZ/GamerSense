@@ -343,3 +343,4 @@ ReviewRangeChecks.Run();
 EventCategorizerChecks.Run();
 BulkDeleteChecks.Run();
 LiveVolumeChecks.Run();
+LearningChecks.Run();

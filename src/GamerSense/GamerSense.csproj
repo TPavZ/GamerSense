@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>GamerSense</AssemblyName>
     <RootNamespace>GamerSense</RootNamespace>
-    <Version>0.4.21</Version>
+    <Version>0.4.22</Version>
     <ApplicationIcon>Assets\GamerSense.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>

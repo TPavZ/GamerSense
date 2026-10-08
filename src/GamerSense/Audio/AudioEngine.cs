@@ -37,15 +37,15 @@ public sealed class AudioEngine : IDisposable
     private string _endpointTiming = "No Windows stream settings recorded yet.\n";
     public EventMonitor? Events { get; private set; }
     public EventLibrary SavedEvents { get; }
-    public AudioEngine(EventLibrary? savedEvents = null) => SavedEvents = savedEvents ?? new EventLibrary(categorizer:
-        new EventCategorizer(Path.Combine(AppContext.BaseDirectory, "Models", "spike-profiles.json")).Categorize);
-    public string AudioDetails => $"GamerSense v0.4.21\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
+    public PersonalProfiles Profiles { get; } = new();
+    public AudioEngine(EventLibrary? savedEvents = null) => SavedEvents = savedEvents ?? new EventLibrary(categorizer: Profiles.Categorize);
+    public string AudioDetails => $"GamerSense v0.4.22\nRunning now: {IsRunning}\nMode: {ActiveTiming.DisplayName}\n" +
         $"Requested capture buffer: {ActiveTiming.CaptureBufferMs} ms\nRequested output buffer: {ActiveTiming.OutputLatencyMs} ms\n" +
         (ActiveTiming.LowEnginePeriod ? "Low-period mode: Windows chooses capacity from its supported period; 30 ms request applies only to fallback.\n" : "") +
         $"Prebuffer target: {ActiveTiming.PrebufferMs} ms\nPlayback buffer capacity: {ActiveTiming.BufferCapacityMs} ms\n" +
         $"Queued audio now: {QueuedAudioMs:F1} ms\nLast capture batch: {CaptureBatchMs:F1} ms\n" +
         $"Capture route: {_captureRoute}\nCapture format: {_captureFormat}\nOutput device mix format: {_outputMixFormat}\nCaptured-sound suggestions enabled: {DetectionEnabled}\n" +
-        $"Category section routing: {VolumeControls.Levels.Enabled}\n{RoutingStatus}\n" +
+        $"Classification profiles: {Profiles.Status}\nCategory section routing: {VolumeControls.Levels.Enabled}\n{RoutingStatus}\n" +
         "Queue/batch values are partial diagnostics, not total end-to-end latency.\n\n" +
         _endpointTiming + "\n" + (_leanOutput?.Report() ?? _leanReport) + "\n" + (_playbackMeter?.Report() ?? "No playback supply readings yet.\n") +
         "\nPLAYBACK SESSION SUMMARY (retained after Stop)\n" + (_diagnostics?.Report() ?? "No playback session recorded yet.");
@@ -95,7 +95,7 @@ public sealed class AudioEngine : IDisposable
             ReadFully = false
         };
         _router = new LiveCategoryRouter(_capture.WaveFormat, VolumeControls,
-            Path.Combine(AppContext.BaseDirectory, "Models", "spike-profiles.json"));
+            Profiles.ActivePath);
         var router = _router;
         _volumes = new LiveCategoryVolumes(_capture.WaveFormat, VolumeControls, () => router.CurrentCategory);
         _playbackMeter = new MeteredPlaybackProvider(_buffer, _volumes.Process);

@@ -36,7 +36,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "GamerSense v0.4.21 — Live volume routing";
+        Text = "GamerSense v0.4.22 — Live volume routing";
         using (var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("GamerSense.AppIcon.ico"))
         {
             if (iconStream is not null) { _appIcon = new System.Drawing.Icon(iconStream); Icon = _appIcon; }
@@ -109,7 +109,10 @@ public sealed class MainForm : Form
         var review = new TabPage("Captured sounds") { BackColor = BackColor, ForeColor = ForeColor };
         var volumes = new TabPage("Volume controls") { BackColor = BackColor, ForeColor = ForeColor };
         playback.Controls.Add(panel); review.Controls.Add(_review); volumes.Controls.Add(_volumePanel);
-        tabs.TabPages.Add(playback); tabs.TabPages.Add(volumes); tabs.TabPages.Add(review); Controls.Add(tabs);
+        tabs.TabPages.Add(playback); tabs.TabPages.Add(volumes); tabs.TabPages.Add(review);
+        var learning = new TabPage("Learning") { BackColor = BackColor, ForeColor = ForeColor };
+        learning.Controls.Add(new LearningPanel(_engine.Profiles, () => _settings.ApprovedExportDirectory ?? ApprovedClipExporter.DefaultDirectory, () => _engine.IsRunning));
+        tabs.TabPages.Add(learning); Controls.Add(tabs);
         KeyPreview = true;
         KeyDown += (_, e) => { if (e.KeyCode == Keys.F8 && !e.Control && !e.Alt) { _review.MarkLive(); e.Handled = true; } };
 

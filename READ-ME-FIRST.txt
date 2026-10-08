@@ -1,47 +1,76 @@
-GamerSense v0.4.21 - gunfire volume control
+GamerSense v0.4.22 - learn from approved sounds
 
 INSTALL
-Stop the old app. Extract the whole App ZIP into a NEW folder and launch
-GamerSense.exe. Requires the .NET 9 Desktop Runtime. Source builds use the
-.NET 9 SDK and the unchanged BUILD-DEBUG.bat.
+Stop the old app. Extract the whole App ZIP into a new folder and launch
+GamerSense.exe. Requires .NET 9 Desktop Runtime. Source: .NET 9 SDK;
+BUILD-DEBUG.bat is unchanged. Audio routing, buffers, six volume sliders,
+device memory, review/export, and native pre-volume capture are preserved.
 
-WHAT CHANGED
-Gunfire now has a separate 0-150% slider alongside Overall, Explosions,
-Footsteps, Ground vehicles and Air vehicles. 100% is normal; 0% mutes a
-routed section. Gunfire values are remembered and included in Reset all.
-Existing settings load with Gunfire at 100%, preserving other slider values.
-Category routing still starts OFF each time the app opens.
+USE THE LEARNING TAB
+1. In Captured sounds, replay/select a useful clip, choose its final category,
+   and Approve & export as usual. Corrections become the training label.
+2. Open Learning and click Retrain from approved clips. It reads your current
+   approved export folder (normally Documents/GamerSense/ApprovedClips) and
+   subfolders. Change that folder in Captured sounds if needed.
+3. Read the result. Categories without enough data stay on bundled profiles.
+   A usable category needs at least 5 unique clips across 3 recording sessions,
+   at least 3 training clips, and clips in the held-out session partition.
+   Imported ranges from the same source file stay grouped together.
+4. Stop playback, then click Use validated candidate. Start playback again.
+   The new profiles drive live routing and newly captured-sound suggestions.
+   Previously saved guesses and your reviewed labels are not rewritten.
+5. Restore bundled profiles returns to the shipped classifier while stopped.
+   Personal profiles persist across app launches under
+   LocalAppData/GamerSense/Learning. Each training run retains its candidate
+   model and report there. No Python or extra ML package is required.
 
-TEST
-Keep your working Direct cable capture setup: game to CABLE Input;
-GamerSense input CABLE Output; true output Speakers (C6).
-Open Volume controls, start playback, and enable Apply category volumes.
-Leave all sliders at 100% initially. Then try Gunfire at 70%, with the others
-at 100%, while watching for Estimated section: gunfire. Sustained firing
-is a better first test than isolated shots. Toggle category volumes off to
-compare. Boosts above 100% can clip loud audio.
+WHAT IS LEARNED
+This first supervised retrainer adds at most 16 representative profiles per
+eligible category to the bundled profiles. Each clip contributes one averaged
+feature vector from up to 12 half-second native stereo windows. Models are
+rebuilt from the current approved collection, rather than repeatedly adding
+copies from previous runs. Original WAV/JSON files are never changed.
+Only app-exported, verified, useful manual-review labels are admitted.
+Mixed/uncertain, missing provenance, invalid/unsupported/quiet samples and
+unreviewed suggestions are skipped. Exact audio duplicates count once;
+conflicting labels for identical audio exclude those samples. Current support
+is 48 kHz stereo PCM/float WAV, 0.1-30 seconds, up to 64 MB per WAV and 1 MB
+per label; a run scans at most 5,001 label files.
 
-LIMITS
-This preview changes the WHOLE mixed section classified as gunfire;
-overlapping footsteps, voices or vehicles in that section change together.
-It does not separate simultaneous sources. Short shots may finish before
-the estimate arrives. Gunfire uses the existing combined profiles with a
-distance limit derived from 2,252 positive weak-label windows, the same
-runner-up margin and two-fresh-estimate policy as other routed categories.
-Those heuristics are not calibrated confidence or validated cross-game
-accuracy. Unknown/stale/gap fallback and bounded holds remain unchanged.
-No capture/output buffer or lookahead was added. The existing smooth gain
-ramps remain in use. At all sliders 100%, output remains byte-identical.
-Captured samples, analysis and approved exports use original pre-volume
-audio. Device memory and playback timing remain unchanged.
+CHECKS AND LIMITS
+Whole recording sessions use a stable hash partition. Held-out sessions never
+supply the NEW personal prototypes, even across categories. The candidate must
+match or beat the current model per updated category on that check and get
+at least half of each category's check clips right. Some clips may already
+have been used in the bundled model, so these are limited regression scores,
+not independent evidence of unseen-game accuracy. Small/positive-only checks
+cannot establish unknown-sound rejection or protection for every category.
+Routing distance limits, runner-up margins and smooth volume fades are kept.
+The preview still changes a whole classified mixed section, not isolated
+simultaneous sources. More varied approved sessions are the next useful data.
+Training runs in the background when requested; it does not automatically
+approve guesses, continuously retrain, or silently switch the active model.
+Activation is explicit and only allowed while playback is stopped. A failed
+or modified candidate cannot be applied; invalid saved personal profiles fall
+back to the bundled profiles. Manual classification remains available.
+
+CURRENT DATA TRIAL
+The existing approved folders yielded 117 unique approved clips, 1 duplicate,
+30 skipped inputs and no conflicting audio labels. Explosions were eligible:
+32 training / 11 held-out clips, current/candidate score 73% / 73%.
+Other categories need more independent sessions or qualifying samples.
+This trial did not activate a personal model and does not claim improved
+recognition. Run Retrain in the installed app to create your local candidate.
 
 VALIDATION
-Debug and Release builds: zero warnings/errors. Audio checks passed for
-native unity, stereo gain, gunfire routing, stale/unknown/off fallback,
-smooth ramps, legacy setting defaults, JSON round-trip and gain bounds.
-UI checks passed for six sliders, saved gunfire edits and reset. The rendered
-volume screen was inspected. Existing capture, review/export and low-delay
-playback checks passed. Listening quality and recognition need game testing.
+Debug/Release builds and existing audio/review tests passed. Learning checks
+cover reviewed-only labels, duplicates/conflicts, unchanged native samples,
+session holdout, bounded prototypes, unchanged routing gates, minimum data,
+failed/modified candidate rejection, restart persistence, bundled restore,
+corrupt-model fallback and unverified suggestions. Learning UI checks cover
+background failure feedback, activation state, playback guard and restore.
+Rendered controls were inspected. Live listening/CPU and useful recognition
+still need your gameplay test.
 
 Source checks:
 dotnet run --project tests/AnalyzerChecks/AnalyzerChecks.csproj -c Release

@@ -51,6 +51,19 @@ class Program
   using(var image=new Bitmap(700,820)){volumes.DrawToBitmap(image,new Rectangle(0,0,700,820));image.Save(Path.Combine(root,"volume-controls.png"));}
   Buttons(volumes).Single(b=>b.Text=="Reset all volumes to 100%").PerformClick();
   if(sliders.Any(x=>x.Value!=100)||controls.Levels.Explosions!=100||controls.Levels.Gunfire!=100)throw new Exception("Volume reset failed.");
+  using var learningForm=new Form{ClientSize=new Size(700,820),BackColor=form.BackColor,ForeColor=Color.White,Font=form.Font,Opacity=0,ShowInTaskbar=false};
+  var personal=new PersonalProfiles(directory:Path.Combine(root,"models"));bool running=true;
+  var learning=new LearningPanel(personal,()=>Path.Combine(root,"missing-approved"),()=>running);
+  learningForm.Controls.Add(learning);learningForm.Show();Application.DoEvents();
+  Buttons(learning).Single(b=>b.Text=="Restore bundled profiles").PerformClick();
+  if(!Descendants(learning).OfType<Label>().Any(l=>l.Text.StartsWith("Stop playback first")))throw new Exception("Learning UI allowed model change during playback.");
+  running=false;Buttons(learning).Single(b=>b.Text=="Restore bundled profiles").PerformClick();
+  using(var image=new Bitmap(700,820)){learning.DrawToBitmap(image,new Rectangle(0,0,700,820));image.Save(Path.Combine(root,"learning-controls.png"));}
+  Buttons(learning).Single(b=>b.Text=="Retrain from approved clips").PerformClick();
+  var timer=System.Diagnostics.Stopwatch.StartNew();
+  while(!Buttons(learning).Single(b=>b.Text=="Retrain from approved clips").Enabled&&timer.ElapsedMilliseconds<3000){Application.DoEvents();Thread.Sleep(10);}
+  if(!Descendants(learning).OfType<Label>().Any(l=>l.Text.Contains("Retraining did not complete"))||Buttons(learning).Single(b=>b.Text=="Use validated candidate").Enabled)throw new Exception("Learning UI failed safe on a missing folder.");
+  Console.WriteLine("PASS learning UI: background failure feedback, candidate enable state, playback guard, bundled restore and rendered controls");
   Console.WriteLine("PASS volume UI: six neutral sliders including gunfire, live controls, explicit enable, saved values, reset; rendered screen saved.");
  }
 }

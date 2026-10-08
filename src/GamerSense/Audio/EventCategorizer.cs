@@ -30,6 +30,7 @@ public sealed class EventCategorizer
     private readonly Dictionary<string, double[][]> _profiles = new();
     private readonly string _modelId = "";
     private readonly string? _unavailable;
+    public bool Available => _unavailable is null;
     public EventCategorizer(string path)
     {
         try
